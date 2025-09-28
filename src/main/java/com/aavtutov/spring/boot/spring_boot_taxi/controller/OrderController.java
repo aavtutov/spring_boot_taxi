@@ -54,33 +54,6 @@ public class OrderController {
 		return toResponseDto(savedOrder);
 	}
 
-//	@PatchMapping("/{id}/accept")
-//	public OrderResponseDTO acceptOrder(@PathVariable("id") Long orderId, @RequestParam("driver-id") Long driverId) {
-//		OrderEntity updatedOrder = orderService.acceptOrder(orderId, driverId);
-//		return toDto(updatedOrder);
-//	}
-//
-//	@PatchMapping("/{id}/complete")
-//	public OrderResponseDTO completeOrderByDriver(@PathVariable("id") Long orderId,
-//			@RequestParam("driver-id") Long driverId, @RequestParam("price") BigDecimal finalPrice) {
-//		OrderEntity updatedOrder = orderService.completeOrder(orderId, driverId, finalPrice);
-//		return toDto(updatedOrder);
-//	}
-//
-//	@PatchMapping("/{id}/cancel-by-driver")
-//	public OrderResponseDTO cancelOrderByDriver(@PathVariable("id") Long orderId,
-//			@RequestParam("driver-id") Long driverId) {
-//		OrderEntity updatedOrder = orderService.cancelOrderByDriver(orderId, driverId);
-//		return toDto(updatedOrder);
-//	}
-//
-//	@PatchMapping("/{id}/cancel-by-client")
-//	public OrderResponseDTO cancelOrderByClient(@PathVariable("id") Long orderId,
-//			@RequestParam("client-id") Long clientId) {
-//		OrderEntity updatedOrder = orderService.cancelOrderByClient(orderId, clientId);
-//		return toDto(updatedOrder);
-//	}
-
 	@PatchMapping("/{id}")
 	public OrderResponseDTO updateOrderStatus(@PathVariable("id") Long orderId,
 			@RequestBody @Valid OrderUpdateDTO updateDTO) {
