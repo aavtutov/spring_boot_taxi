@@ -23,6 +23,5 @@ public class OrderUpdateDTO {
 	private OrderAction action;
 	
 	private BigDecimal price;
-	private BigDecimal bonusFare;
 
 }
