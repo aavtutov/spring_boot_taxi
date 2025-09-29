@@ -3,6 +3,7 @@ package com.aavtutov.spring.boot.spring_boot_taxi.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderCancellationSource;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderStatus;
 
 import lombok.AllArgsConstructor;
@@ -44,5 +45,9 @@ public class OrderResponseDTO {
 	private Instant startedAt;
 	private Instant completedAt;
 	private Instant cancelledAt;
+	
+	private OrderCancellationSource cancellationSource;
+	
+	private BigDecimal totalPrice;
 
 }

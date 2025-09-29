@@ -47,6 +47,10 @@ public class OrderMapper {
 		dto.setStartedAt(order.getStartedAt());
 		dto.setCompletedAt(order.getCompletedAt());
 		dto.setCancelledAt(order.getCancelledAt());
+		
+		dto.setCancellationSource(order.getCancellationSource());
+		
+		dto.setTotalPrice(order.getTotalPrice());
 
 		return dto;
 	}
@@ -81,6 +85,10 @@ public class OrderMapper {
 		entity.setStartedAt(dto.getStartedAt());
 		entity.setCompletedAt(dto.getCompletedAt());
 		entity.setCancelledAt(dto.getCancelledAt());
+		
+		entity.setCancellationSource(dto.getCancellationSource());
+		
+		entity.setTotalPrice(dto.getTotalPrice());
 
 		return entity;
 	}
