@@ -1,5 +1,7 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.service;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.ClientRepository;
@@ -29,6 +31,11 @@ public class ClientServiceImpl implements ClientService {
 	public ClientEntity findClientByTelegramId(Long telegramId) {
 		return clientRepository.findByTelegramId(telegramId)
 				.orElseThrow(() -> new ClientNotFoundException("Client with telegram_id=" + telegramId + " not found"));
+	}
+	
+	@Override
+	public Optional<ClientEntity> findClientOptionalByTelegramId(Long telegramId) {
+	    return clientRepository.findByTelegramId(telegramId);
 	}
 
 	@Override
