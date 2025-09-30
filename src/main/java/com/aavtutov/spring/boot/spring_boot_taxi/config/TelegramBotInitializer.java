@@ -26,7 +26,7 @@ public class TelegramBotInitializer {
 			System.out.println(
 					"Telegram Bot: " + telegramBotLauncher.getBotUsername() + " successfully registered and started!");
 		} catch (TelegramApiException e) {
-			System.err.println("Ошибка при регистрации Telegram Bot:");
+			System.err.println("Error registering Telegram Bot:");
 			e.printStackTrace();
 		}
 	}
