@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a ride | Hop-in taxi app</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .form-container { max-width: 400px; margin: 0 auto; }
+        label, input, button { display: block; width: 100%; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>New Order</h2>
+        <form id="orderForm">
+            <label for="startAddress">From:</label>
+            <input type="text" id="startAddress" required>
+
+            <label for="endAddress">To:</label>
+            <input type="text" id="endAddress" required>
+            
+            <input type="hidden" id="price" value="100.00">
+            <input type="hidden" id="bonusFare" value="0.00">
+            
+            <div id="statusMessage" style="color: red; margin-top: 10px;"></div>
+
+            <button type="submit">Book</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Telegram Web App started!');
+            
+            // check Telegram WebApp initialized
+            if (window.Telegram && window.Telegram.WebApp) {
+                // initializing Web App
+                const WebApp = window.Telegram.WebApp;
+                WebApp.ready(); 
+                
+                // add a handler for submitting the form
+                document.getElementById('orderForm').addEventListener('submit', handleOrderSubmission);
+            }
+        });
+        
+
+     const API_BASE_URL = "http://localhost:8080/spring-boot-taxi";
+     
+     const TEST_LATITUDE = 55.7558;
+     const TEST_LONGITUDE = 37.6173;
+
+     async function handleOrderSubmission(event) {
+         event.preventDefault(); // prevent standard form submission
+
+         const startAddress = document.getElementById('startAddress').value;
+         const endAddress = document.getElementById('endAddress').value;
+         const price = document.getElementById('price').value; 
+         const bonusFare = document.getElementById('bonusFare').value;
+         const statusMessage = document.getElementById('statusMessage');
+
+         statusMessage.textContent = 'Processing...';
+         
+         const TEST_CLIENT_ID = 1; 
+         
+      // JSON Payload (OrderCreateDTO)
+         const orderPayload = {
+             startAddress: startAddress,
+             endAddress: endAddress,
+
+             startLatitude: TEST_LATITUDE,
+             startLongitude: TEST_LONGITUDE,
+             endLatitude: TEST_LATITUDE + 0.1,
+             endLongitude: TEST_LONGITUDE + 0.1, 
+
+             price: price,
+             bonusFare: bonusFare,
+
+             mapScreenshotUrl: null, 
+             locationPhotoUrl: null
+         };
+         
+         
+
+      // Spring Boot API call
+         try {
+             const response = await fetch(`${API_BASE_URL}/api/orders?client-id=${TEST_CLIENT_ID}`, {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+                 },
+                 body: JSON.stringify(orderPayload) // send payload
+             });
+
+             const result = await response.json();
+
+             if (response.ok) {
+                 statusMessage.textContent = `Order #${result.id} created! Status: ${result.status}`;
+                 statusMessage.style.color = 'green';
+                 window.Telegram.WebApp.close(); 
+             } else {
+                 statusMessage.textContent = `Error API (${response.status}): ${result.message || JSON.stringify(result)}`;
+                 statusMessage.style.color = 'red';
+             }
+
+         } catch (error) {
+             console.error('Network error:', error);
+             statusMessage.textContent = 'Network error. Check your API address.';
+             statusMessage.style.color = 'red';
+         }
+     }
+    </script>
+</body>
+</html>
