@@ -68,7 +68,7 @@ public class TelegramBotLauncher extends TelegramLongPollingBot {
 		SendMessage message = new SendMessage(chatId, messageText);
 
 		// WebApp data on my server
-		WebAppInfo webAppInfo = WebAppInfo.builder().url("https://comodio.com/spring-boot-taxi").build();
+		WebAppInfo webAppInfo = WebAppInfo.builder().url("https://main.dlp5w5qqfney2.amplifyapp.com/").build();
 
 		// create the btn
 		InlineKeyboardButton button = InlineKeyboardButton.builder().text("Book a ride").webApp(webAppInfo).build();
