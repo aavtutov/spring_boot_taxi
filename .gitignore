@@ -5,7 +5,7 @@ target/
 !**/src/test/**/target/
 
 # properties with passwords and tokens
-src/main/resources/application.properties
+src/main/resources/application-local.properties
 
 
 ### STS ###
