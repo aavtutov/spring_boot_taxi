@@ -1,36 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book a ride | Hop-in taxi app</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .form-container { max-width: 400px; margin: 0 auto; }
-        label, input, button { display: block; width: 100%; margin-bottom: 10px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book a ride | Hop-in taxi app</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+body {
+	font-family: Arial, sans-serif;
+	padding: 20px;
+}
+
+.form-container {
+	max-width: 400px;
+	margin: 0 auto;
+}
+
+label, input, button {
+	display: block;
+	width: 100%;
+	margin-bottom: 10px;
+}
+</style>
 </head>
 <body>
-    <div class="form-container">
-        <h2>New Order</h2>
-        <form id="orderForm">
-            <label for="startAddress">From:</label>
-            <input type="text" id="startAddress" required>
+	<div class="form-container">
+		<h2>New Order</h2>
+		<form id="orderForm">
+			<label for="startAddress">From:</label> <input type="text"
+				id="startAddress" required> <label for="endAddress">To:</label>
+			<input type="text" id="endAddress" required> <input
+				type="hidden" id="price" value="100.00"> <input
+				type="hidden" id="bonusFare" value="0.00">
 
-            <label for="endAddress">To:</label>
-            <input type="text" id="endAddress" required>
-            
-            <input type="hidden" id="price" value="100.00">
-            <input type="hidden" id="bonusFare" value="0.00">
-            
-            <div id="statusMessage" style="color: red; margin-top: 10px;"></div>
+			<div id="statusMessage" style="color: red; margin-top: 10px;"></div>
 
-            <button type="submit">Book</button>
-        </form>
-    </div>
+			<button type="submit">Book</button>
+		</form>
+	</div>
 
-    <script>
+	<script>
         document.addEventListener('DOMContentLoaded', () => {
             console.log('Telegram Web App started!');
             
@@ -61,7 +70,7 @@
          const statusMessage = document.getElementById('statusMessage');
 
          const WebApp = window.Telegram.WebApp;
-         const initData = WebApp.initData;
+         const initData = Telegram.WebApp.initData;
          
          if (!initData || initData.length < 5) {
         	    statusMessage.textContent = 'Error: Telegram data not received. Restart the bot.';
