@@ -60,9 +60,10 @@
          const bonusFare = document.getElementById('bonusFare').value;
          const statusMessage = document.getElementById('statusMessage');
 
-         statusMessage.textContent = 'Processing...';
+         const WebApp = window.Telegram.WebApp;
+         const initData = WebApp.initData;
          
-         const TEST_CLIENT_ID = 1; 
+         statusMessage.textContent = 'Processing...';
          
       // JSON Payload (OrderCreateDTO)
          const orderPayload = {
@@ -85,12 +86,13 @@
 
       // Spring Boot API call
          try {
-             const response = await fetch(`${API_BASE_URL}/api/orders?client-id=${TEST_CLIENT_ID}`, {
+             const response = await fetch(`${API_BASE_URL}/api/orders`, {
                  method: 'POST',
                  headers: {
                      'Content-Type': 'application/json',
+                     'X-Telegram-Init-Data': initData
                  },
-                 body: JSON.stringify(orderPayload) // send payload
+                 body: JSON.stringify(orderPayload)
              });
 
              const result = await response.json();
