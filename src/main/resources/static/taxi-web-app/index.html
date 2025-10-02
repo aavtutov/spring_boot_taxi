@@ -90,7 +90,7 @@
                  method: 'POST',
                  headers: {
                      'Content-Type': 'application/json',
-                     'X-Telegram-Init-Data': initData
+                     'X-Telegram-Init-Data': encodeURIComponent(initData)
                  },
                  body: JSON.stringify(orderPayload)
              });
