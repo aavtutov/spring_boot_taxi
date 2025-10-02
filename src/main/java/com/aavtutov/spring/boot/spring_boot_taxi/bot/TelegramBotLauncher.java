@@ -58,7 +58,8 @@ public class TelegramBotLauncher extends TelegramLongPollingBot {
 				}
 
 			}
-			sendWebAppButton(chatId, "Press the button to book a ride.");
+			sendWebAppButton(chatId, "<b>Press the button to book a ride.</b>\n"
+					+ "Start using taxi right in your Telegram.");
 		}
 
 	}
@@ -66,12 +67,13 @@ public class TelegramBotLauncher extends TelegramLongPollingBot {
 	private void sendWebAppButton(String chatId, String messageText) {
 
 		SendMessage message = new SendMessage(chatId, messageText);
+		message.setParseMode("HTML");
 
 		// WebApp data on my server
 		WebAppInfo webAppInfo = WebAppInfo.builder().url("https://main.dlp5w5qqfney2.amplifyapp.com/").build();
 
 		// create the btn
-		InlineKeyboardButton button = InlineKeyboardButton.builder().text("Book a ride").webApp(webAppInfo).build();
+		InlineKeyboardButton button = InlineKeyboardButton.builder().text("Open Hop in").webApp(webAppInfo).build();
 
 		// create btn row and add WebApp btn
 		List<InlineKeyboardButton> keyboardRow = new ArrayList<>();
