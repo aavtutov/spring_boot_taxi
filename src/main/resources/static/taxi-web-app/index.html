@@ -79,9 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
         	    return; // Stop execution to avoid sending an invalid request
         }
          
-         alert("initData отправлен на backend:\n\n" + initData);
-         
-         
          statusMessage.textContent = 'Processing...';
          
       // JSON Payload (OrderCreateDTO)
@@ -109,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  method: 'POST',
                  headers: {
                      'Content-Type': 'application/json',
-                     'X-Telegram-Init-Data': Telegram.WebApp.initData || Telegram.WebApp.initDataRaw
+                     'X-Telegram-Init-Data': initData
                  },
                  body: JSON.stringify(orderPayload)
              });
@@ -119,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
              if (response.ok) {
                  statusMessage.textContent = `Order #${result.id} created! Status: ${result.status}`;
                  statusMessage.style.color = 'green';
-                 window.Telegram.WebApp.close(); 
              } else {
                  statusMessage.textContent = `Error API (${response.status}): ${result.message || JSON.stringify(result)}`;
                  statusMessage.style.color = 'red';
