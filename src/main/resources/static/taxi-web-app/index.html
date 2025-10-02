@@ -107,7 +107,7 @@ label, input, button {
                  method: 'POST',
                  headers: {
                      'Content-Type': 'application/json',
-                     'X-Telegram-Init-Data': initData
+                     'X-Telegram-Init-Data': Telegram.WebApp.initData || Telegram.WebApp.initDataRaw
                  },
                  body: JSON.stringify(orderPayload)
              });
