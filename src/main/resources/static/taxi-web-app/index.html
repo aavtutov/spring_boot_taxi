@@ -63,6 +63,14 @@
          const WebApp = window.Telegram.WebApp;
          const initData = WebApp.initData;
          
+         if (!initData || initData.length < 5) {
+        	    statusMessage.textContent = 'Error: Telegram data not received. Restart the bot.';
+        	    statusMessage.style.color = 'red';
+        	    console.error('WebApp.initData empty or incorrect.');
+        	    return; // Stop execution to avoid sending an invalid request
+        }
+         
+         
          statusMessage.textContent = 'Processing...';
          
       // JSON Payload (OrderCreateDTO)
