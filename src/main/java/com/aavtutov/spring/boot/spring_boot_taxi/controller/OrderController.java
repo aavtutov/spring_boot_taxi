@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverResponseDTO;
@@ -18,8 +18,11 @@ import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderResponseDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderUpdateDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.DriverMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.OrderMapper;
+import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
+import com.aavtutov.spring.boot.spring_boot_taxi.security.TelegramWebAppAuthValidator;
+import com.aavtutov.spring.boot.spring_boot_taxi.service.ClientService;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.OrderService;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.validator.OrderUpdateValidator;
 
@@ -33,13 +36,18 @@ public class OrderController {
 	private final OrderMapper orderMapper;
 	private final DriverMapper driverMapper;
 	private final OrderUpdateValidator orderUpdateValidator;
+	private final ClientService clientService;
+	private final TelegramWebAppAuthValidator authValidator;
 
 	public OrderController(OrderService orderService, OrderMapper orderMapper, DriverMapper driverMapper,
-			OrderUpdateValidator orderUpdateValidator) {
+			OrderUpdateValidator orderUpdateValidator, ClientService clientService,
+			TelegramWebAppAuthValidator authValidator) {
 		this.orderService = orderService;
 		this.orderMapper = orderMapper;
 		this.driverMapper = driverMapper;
 		this.orderUpdateValidator = orderUpdateValidator;
+		this.clientService = clientService;
+		this.authValidator = authValidator;
 	}
 
 	private OrderResponseDTO toResponseDto(OrderEntity orderEntity) {
@@ -48,9 +56,17 @@ public class OrderController {
 
 	@PostMapping
 	public OrderResponseDTO placeOrder(@RequestBody @Valid OrderCreateDTO orderCreateDTO,
-			@RequestParam("client-id") Long clientId) {
+			@RequestHeader("X-Telegram-Init-Data") String initData) {
+		
+		// validate initData and get telegramId
+		Long telegramId = authValidator.validate(initData);
+		
+		// find client by telegramId
+		ClientEntity client = clientService.findClientByTelegramId(telegramId);
+		
 		OrderEntity order = orderMapper.fromCreateDto(orderCreateDTO);
-		OrderEntity savedOrder = orderService.placeOrder(order, clientId);
+		OrderEntity savedOrder = orderService.placeOrder(order, client.getId());
+		
 		return toResponseDto(savedOrder);
 	}
 
