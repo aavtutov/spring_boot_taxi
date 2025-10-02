@@ -40,20 +40,7 @@ label, input, button {
 	</div>
 
 	<script>
-	
-	document.addEventListener('DOMContentLoaded', () => {
-	    const WebApp = window.Telegram.WebApp;
-	    WebApp.ready();
-
-	    const initData = WebApp.initData;
-
-	    alert("initData: " + initData);  // 🧪 debug
-	    console.log("🔍 initData: ", initData);
-
-	    document.getElementById('orderForm').addEventListener('submit', handleOrderSubmission);
-	});
-	
- /*        document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
             console.log('Telegram Web App started!');
             
             // check Telegram WebApp initialized
@@ -141,7 +128,7 @@ label, input, button {
              statusMessage.textContent = 'Network error. Check your API address.';
              statusMessage.style.color = 'red';
          }
-     } */
+     } 
     </script>
 </body>
 </html>
