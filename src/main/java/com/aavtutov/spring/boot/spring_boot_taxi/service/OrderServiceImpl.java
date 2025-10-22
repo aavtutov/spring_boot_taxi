@@ -127,7 +127,7 @@ public class OrderServiceImpl implements OrderService {
 		OrderEntity savedOrder = orderRepository.save(order);
 		
 		if (order.getDriver().getTelegramChatId() != null) {
-	        String message = "Your driver is already on the way!";
+	        String message = "🚕 Your driver is already on the way!";
 	        telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
 	    }
 		
@@ -167,7 +167,7 @@ public class OrderServiceImpl implements OrderService {
 		OrderEntity savedOrder = orderRepository.save(order);
 		
 		if (order.getDriver().getTelegramChatId() != null) {
-	        String message = "Your ride was completed!" + "\nTotal Price: " + savedOrder.getTotalPrice();
+	        String message = "🏁 Your ride was completed!" + "\nTotal Price: " + savedOrder.getTotalPrice();
 	        telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
 	    }
 		
