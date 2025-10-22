@@ -163,7 +163,15 @@ public class OrderServiceImpl implements OrderService {
 		order.setStatus(OrderStatus.COMPLETED);
 		order.setPrice(calculatedPrice);
 		order.setTotalPrice(calculatedPrice.add(order.getBonusFare()));
-		return orderRepository.save(order);
+		
+		OrderEntity savedOrder = orderRepository.save(order);
+		
+		if (order.getDriver().getTelegramChatId() != null) {
+	        String message = "Your ride was completed!" + "\nTotal Price: " + savedOrder.getTotalPrice();
+	        telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
+	    }
+		
+		return savedOrder;
 	}
 
 	@Override
