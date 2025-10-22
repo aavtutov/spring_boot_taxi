@@ -57,18 +57,27 @@ public class OrderEntity {
 	@Column(name = "end_address", nullable = false)
 	private String endAddress;
 
-	@Column(name = "start_latitude", nullable = false)
+	@Column(name = "start_latitude", nullable = false, precision = 10, scale = 8)
 	private BigDecimal startLatitude;
 
-	@Column(name = "start_longitude", nullable = false)
+	@Column(name = "start_longitude", nullable = false, precision = 11, scale = 8)
 	private BigDecimal startLongitude;
 
-	@Column(name = "end_latitude", nullable = false)
+	@Column(name = "end_latitude", nullable = false, precision = 10, scale = 8)
 	private BigDecimal endLatitude;
 
-	@Column(name = "end_longitude", nullable = false)
+	@Column(name = "end_longitude", nullable = false, precision = 11, scale = 8)
 	private BigDecimal endLongitude;
 
+	@Column(name = "aproximate_distance", precision = 10, scale = 3)
+    private BigDecimal aproximateDistance = BigDecimal.ZERO;
+
+	@Column(name = "aproximate_duration", precision = 10, scale = 2)
+	private BigDecimal aproximateDuration = BigDecimal.ZERO;
+
+	@Column(name = "actual_duration", precision = 10, scale = 2)
+	private BigDecimal actualDuration;
+	
 	@Column(name = "price", nullable = false)
 	private BigDecimal price = BigDecimal.ZERO;
 
@@ -76,13 +85,10 @@ public class OrderEntity {
 	private BigDecimal bonusFare = BigDecimal.ZERO;
 
 	@Column(name = "total_price", nullable = false)
-	private BigDecimal totalPrice = BigDecimal.ZERO;	
+	private BigDecimal totalPrice = BigDecimal.ZERO;
 	
-	@Column(name = "map_screenshot_url")
-	private String mapScreenshotUrl;
-
-	@Column(name = "location_photo_url")
-	private String locationPhotoUrl;
+	@Column(name = "notes")
+	private String notes;
 
 	@CreationTimestamp
 	@Column(name = "created_at", updatable = false, nullable = false)

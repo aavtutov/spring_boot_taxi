@@ -33,6 +33,9 @@ public class ClientEntity {
 	@Column(name = "telegram_user_id", unique = true, nullable = false)
 	private Long telegramId;
 
+	@Column(name = "telegram_chat_id", unique = true, nullable = false)
+	private String telegramChatId;
+
 	@Column(name = "full_name")
 	private String fullName;
 

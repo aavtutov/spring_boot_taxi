@@ -17,7 +17,6 @@ public class TelegramUserDTO {
     @JsonProperty("first_name")
     private String firstName;
     
-    // username (optional, but helpful)
     @JsonProperty("username")
     private String username;
     

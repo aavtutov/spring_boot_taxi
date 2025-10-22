@@ -37,7 +37,7 @@ public class TelegramWebAppAuthValidator {
 
 		String receivedHash = dataMap.remove("hash");
 		if (receivedHash == null) {
-			throw new SecurityException("Hash not found in initData.");
+			throw new SecurityException("Hash not found in initData");
 		}
 
 		String dataCheckString = dataMap.entrySet().stream().map(entry -> entry.getKey() + "=" + entry.getValue())
@@ -57,7 +57,7 @@ public class TelegramWebAppAuthValidator {
 
 			String userData = dataMap.get("user");
 			if (userData == null) {
-				throw new SecurityException("User data not found in initData.");
+				throw new SecurityException("User data not found in initData");
 			}
 
 			try {
@@ -65,7 +65,7 @@ public class TelegramWebAppAuthValidator {
 				Long telegramId = userDTO.getId();
 
 				if (telegramId == null) {
-					throw new SecurityException("Telegram ID not found in user data.");
+					throw new SecurityException("Telegram ID not found in user data");
 				}
 				return telegramId;
 
@@ -74,7 +74,7 @@ public class TelegramWebAppAuthValidator {
 			}
 
 		} catch (NoSuchAlgorithmException | InvalidKeyException e) {
-			throw new SecurityException("Internal server error during auth validation.", e);
+			throw new SecurityException("Internal server error during auth validation", e);
 		}
 	}
 

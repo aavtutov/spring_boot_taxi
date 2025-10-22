@@ -35,31 +35,54 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleClientAlreadyExistException(ClientAlreadyExistsException exception,
+	public ResponseEntity<IncorrectData> handleClientAlreadyExistsException(ClientAlreadyExistsException exception,
 			HttpServletRequest request) {
 		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
 	}
 
 	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleDriverAlreadyExistException(DriverAlreadyExistsException exception,
+	public ResponseEntity<IncorrectData> handleDriverAlreadyExistsException(DriverAlreadyExistsException exception,
+			HttpServletRequest request) {
+		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
+	}
+	
+	@ExceptionHandler
+	public ResponseEntity<IncorrectData> handleActiveOrderAlreadyExistsException(ActiveOrderAlreadyExistsException exception,
 			HttpServletRequest request) {
 		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
 	}
 
 	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleNoSuchClientException(ClientNotFoundException exception,
+	public ResponseEntity<IncorrectData> handleClientNotFoundException(ClientNotFoundException exception,
 			HttpServletRequest request) {
 		return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
 	}
 
 	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleNoSuchDriverException(DriverNotFoundException exception,
+	public ResponseEntity<IncorrectData> handleDriverNotFoundException(DriverNotFoundException exception,
 			HttpServletRequest request) {
 		return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
+	}
+
+	@ExceptionHandler
+	public ResponseEntity<IncorrectData> handleOrderNotFoundException(OrderNotFoundException exception,
+			HttpServletRequest request) {
+		return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
+	}
+
+	@ExceptionHandler
+	public ResponseEntity<IncorrectData> handleNoContentException(NoContentException exception,
+			HttpServletRequest request) {
+		return buildErrorResponse(exception, HttpStatus.NO_CONTENT, request);
 	}
 
 	@ExceptionHandler
 	public ResponseEntity<IncorrectData> handleDriverOfflineException(DriverOfflineException exception,
+			HttpServletRequest request) {
+		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
+	}
+
+	public ResponseEntity<IncorrectData> handleOrderStatusConflictException(DriverOfflineException exception,
 			HttpServletRequest request) {
 		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
 	}
@@ -77,6 +100,18 @@ public class GlobalExceptionHandler {
 		String errorMessage = exception.getBindingResult().getFieldErrors().stream()
 				.map(error -> error.getDefaultMessage()).findFirst().orElse("Validation failed");
 		return buildErrorResponse(errorMessage, HttpStatus.BAD_REQUEST, request);
+	}
+
+	@ExceptionHandler
+	public ResponseEntity<IncorrectData> handleIllegalArgumentException(IllegalArgumentException exception,
+			HttpServletRequest request) {
+		return buildErrorResponse(exception, HttpStatus.BAD_REQUEST, request);
+	}
+	
+	@ExceptionHandler
+	public ResponseEntity<IncorrectData> handleMapboxServiceException(MapboxServiceException exception,
+			HttpServletRequest request) {
+		return buildErrorResponse(exception, HttpStatus.BAD_REQUEST, request);
 	}
 
 	@ExceptionHandler

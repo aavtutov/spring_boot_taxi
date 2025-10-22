@@ -20,6 +20,8 @@ public class DriverResponseDTO {
 	private String fullName;
 
 	private String carModel;
+	
+	private String carColor;
 
 	private String licensePlate;
 	

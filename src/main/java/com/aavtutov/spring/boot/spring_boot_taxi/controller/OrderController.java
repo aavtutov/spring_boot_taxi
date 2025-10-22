@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverResponseDTO;
-import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderAction;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderCreateDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderResponseDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderUpdateDTO;
@@ -20,11 +19,13 @@ import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.DriverMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.OrderMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
+import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
+import com.aavtutov.spring.boot.spring_boot_taxi.exception.DriverOfflineException;
 import com.aavtutov.spring.boot.spring_boot_taxi.security.TelegramWebAppAuthValidator;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.ClientService;
+import com.aavtutov.spring.boot.spring_boot_taxi.service.DriverService;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.OrderService;
-import com.aavtutov.spring.boot.spring_boot_taxi.service.validator.OrderUpdateValidator;
 
 import jakarta.validation.Valid;
 
@@ -33,77 +34,118 @@ import jakarta.validation.Valid;
 public class OrderController {
 
 	private final OrderService orderService;
+	private final ClientService clientService;
+	private final DriverService driverService;
 	private final OrderMapper orderMapper;
 	private final DriverMapper driverMapper;
-	private final OrderUpdateValidator orderUpdateValidator;
-	private final ClientService clientService;
 	private final TelegramWebAppAuthValidator authValidator;
 
-	public OrderController(OrderService orderService, OrderMapper orderMapper, DriverMapper driverMapper,
-			OrderUpdateValidator orderUpdateValidator, ClientService clientService,
+	public OrderController(OrderService orderService, ClientService clientService, DriverService driverService,
+			OrderMapper orderMapper, DriverMapper driverMapper,
 			TelegramWebAppAuthValidator authValidator) {
 		this.orderService = orderService;
+		this.clientService = clientService;
+		this.driverService = driverService;
 		this.orderMapper = orderMapper;
 		this.driverMapper = driverMapper;
-		this.orderUpdateValidator = orderUpdateValidator;
-		this.clientService = clientService;
 		this.authValidator = authValidator;
-	}
-
-	private OrderResponseDTO toResponseDto(OrderEntity orderEntity) {
-		return orderMapper.toResponseDto(orderEntity);
 	}
 
 	@PostMapping
 	public OrderResponseDTO placeOrder(@RequestBody @Valid OrderCreateDTO orderCreateDTO,
 			@RequestHeader("X-Telegram-Init-Data") String initData) {
-		
-		// validate initData and get telegramId
+
 		Long telegramId = authValidator.validate(initData);
-		
-		// find client by telegramId
 		ClientEntity client = clientService.findClientByTelegramId(telegramId);
-		
+
 		OrderEntity order = orderMapper.fromCreateDto(orderCreateDTO);
 		OrderEntity savedOrder = orderService.placeOrder(order, client.getId());
-		
-		return toResponseDto(savedOrder);
+
+		return orderMapper.toResponseDto(savedOrder);
 	}
+
+//	@PatchMapping("/{id}")
+//	public OrderResponseDTO updateOrderStatus(
+//			@PathVariable("id") Long orderId,
+//			@RequestBody @Valid OrderUpdateDTO updateDTO,
+//			@RequestHeader("X-Telegram-Init-Data") String initData) {
+//
+//		Long telegramId = authValidator.validate(initData);
+//		Long clientId = clientService.findClientByTelegramId(telegramId).getId();
+//
+//		DriverEntity driver = null;
+//
+//		orderUpdateValidator.validate(updateDTO);
+//		OrderAction action = updateDTO.getAction();
+//		OrderEntity updatedOrder = null;
+//
+//		if (action.isDriverAction()) {
+//
+//			driver = driverService.findDriverByTelegramId(telegramId);
+//			if (driver.getStatus() != DriverStatus.ACTIVE) {
+//				throw new DriverOfflineException("Driver is not ACTIVE (current status: " + driver.getStatus() + ")");
+//			}
+//		}
+//
+//		switch (action) {
+//
+//		case ACCEPT -> {
+//			updatedOrder = orderService.acceptOrder(orderId, driver.getId());
+//		}
+//
+//		case START_TRIP -> {
+//			updatedOrder = orderService.startTrip(orderId, driver.getId());
+//		}
+//
+//		case COMPLETE -> {
+//			updatedOrder = orderService.completeOrder(orderId, driver.getId(), updateDTO.getPrice());
+//		}
+//
+//		case CANCEL_BY_DRIVER -> {
+//			updatedOrder = orderService.cancelOrderByDriver(orderId, driver.getId());
+//		}
+//
+//		case CANCEL_BY_CLIENT -> {
+//			updatedOrder = orderService.cancelOrderByClient(orderId, clientId);
+//		}
+//
+//		}
+//
+//		return orderMapper.toResponseDto(updatedOrder);
+//	}
 
 	@PatchMapping("/{id}")
 	public OrderResponseDTO updateOrderStatus(@PathVariable("id") Long orderId,
-			@RequestBody @Valid OrderUpdateDTO updateDTO) {
+			@RequestBody @Valid OrderUpdateDTO updateDTO, @RequestHeader("X-Telegram-Init-Data") String initData) {
 
-		orderUpdateValidator.validate(updateDTO);
-
+		Long telegramId = authValidator.validate(initData);
 		OrderEntity updatedOrder = null;
-		OrderAction action = updateDTO.getAction();
 
-		switch (action) {
+		switch (updateDTO.getAction()) {
 
-		case ACCEPT -> {
-			updatedOrder = orderService.acceptOrder(orderId, updateDTO.getDriverId());
-		}
+		case ACCEPT, START_TRIP, COMPLETE, CANCEL_BY_DRIVER -> {
+			DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
 
-		case START_TRIP -> {
-			updatedOrder = orderService.startTrip(orderId, updateDTO.getDriverId());
-		}
+			if (driver.getStatus() != DriverStatus.ACTIVE) {
+				throw new DriverOfflineException("Driver is not ACTIVE (current status: " + driver.getStatus() + ")");
+			}
 
-		case COMPLETE -> {
-			updatedOrder = orderService.completeOrder(orderId, updateDTO.getDriverId(), updateDTO.getPrice());
-		}
-
-		case CANCEL_BY_DRIVER -> {
-			updatedOrder = orderService.cancelOrderByDriver(orderId, updateDTO.getDriverId());
+			updatedOrder = switch (updateDTO.getAction()) {
+			case ACCEPT -> orderService.acceptOrder(orderId, driver.getId());
+			case START_TRIP -> orderService.startTrip(orderId, driver.getId());
+			case COMPLETE -> orderService.completeOrder(orderId, driver.getId());
+			case CANCEL_BY_DRIVER -> orderService.cancelOrderByDriver(orderId, driver.getId());
+			default -> throw new IllegalStateException("Unexpected driver action");
+			};
 		}
 
 		case CANCEL_BY_CLIENT -> {
-			updatedOrder = orderService.cancelOrderByClient(orderId, updateDTO.getClientId());
+			Long clientId = clientService.findClientByTelegramId(telegramId).getId();
+			updatedOrder = orderService.cancelOrderByClient(orderId, clientId);
+		}
 		}
 
-		}
-
-		return toResponseDto(updatedOrder);
+		return orderMapper.toResponseDto(updatedOrder);
 	}
 
 	@GetMapping("/{id}/find-suitable-drivers")
@@ -115,7 +157,33 @@ public class OrderController {
 	@GetMapping("/{id}")
 	public OrderResponseDTO findOrderById(@PathVariable("id") Long orderId) {
 		OrderEntity order = orderService.findOrderById(orderId);
-		return toResponseDto(order);
+		return orderMapper.toResponseDto(order);
+	}
+
+	@GetMapping
+	public List<OrderResponseDTO> findAvailableOrders(@RequestHeader("X-Telegram-Init-Data") String initData) {
+		Long telegramId = authValidator.validate(initData);
+		driverService.findDriverByTelegramId(telegramId);
+
+		List<OrderEntity> availableOrders = orderService.findAvailableOrders();
+		return availableOrders.stream().map(orderMapper::toResponseDto).toList();
+	}
+
+	@GetMapping("/client-history")
+	public List<OrderResponseDTO> getClientOrderHistory(@RequestHeader("X-Telegram-Init-Data") String initData) {
+		Long telegramId = authValidator.validate(initData);
+		Long clientId = clientService.findClientByTelegramId(telegramId).getId();
+		List<OrderEntity> orders = orderService.findOrdersByClientId(clientId);
+		return orders.stream().map(orderMapper::toResponseDto).toList();
+	}
+
+	@GetMapping("/client-current")
+	public OrderResponseDTO getClientCurrentOrder(@RequestHeader("X-Telegram-Init-Data") String initData) {
+		Long telegramId = authValidator.validate(initData);
+		Long clientId = clientService.findClientByTelegramId(telegramId).getId();
+
+		OrderEntity order = orderService.findCurrentOrderByClientId(clientId);
+		return orderMapper.toResponseDto(order);
 	}
 
 }

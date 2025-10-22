@@ -33,12 +33,12 @@ public class OrderResponseDTO {
 	private BigDecimal startLongitude;
 	private BigDecimal endLatitude;
 	private BigDecimal endLongitude;
+	
+	private BigDecimal aproximateDistance;
+	private BigDecimal aproximateDuration;
 
 	private BigDecimal price;
 	private BigDecimal bonusFare;
-
-	private String mapScreenshotUrl;
-	private String locationPhotoUrl;
 
 	private Instant createdAt;
 	private Instant acceptedAt;
@@ -49,5 +49,7 @@ public class OrderResponseDTO {
 	private OrderCancellationSource cancellationSource;
 	
 	private BigDecimal totalPrice;
+	
+	private String notes;
 
 }

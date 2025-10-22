@@ -17,6 +17,11 @@ public class ClientServiceImpl implements ClientService {
 	public ClientServiceImpl(ClientRepository clientRepository) {
 		this.clientRepository = clientRepository;
 	}
+	
+	@Override
+    public ClientEntity updateClient(ClientEntity client) {
+        return clientRepository.save(client);
+    }
 
 	@Override
 	public ClientEntity registerClient(ClientEntity client) {

@@ -47,13 +47,8 @@ public class OrderCreateDTO {
 	private BigDecimal price;
 	
 	@DecimalMin(value = "0.0", inclusive = true, message = "Order create: Bonus fare must be >= 0")
-	@NotNull(message = "Order create: Bonus fare is required")
 	private BigDecimal bonusFare;
-
-//	@URL(message = "Order create: Invalid map screenshot URL")
-	private String mapScreenshotUrl;
 	
-//	@URL(message = "Order create: Invalid location photo URL")
-	private String locationPhotoUrl;
+	private String notes;
 
 }

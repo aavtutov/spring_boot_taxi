@@ -1,5 +1,7 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper;
 
+import java.math.BigDecimal;
+
 import org.springframework.stereotype.Component;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderCreateDTO;
@@ -17,40 +19,42 @@ public class OrderMapper {
 		this.driverMapper = driverMapper;
 	}
 
-	public OrderResponseDTO toResponseDto(OrderEntity order) {
+	public OrderResponseDTO toResponseDto(OrderEntity entity) {
 
 		OrderResponseDTO dto = new OrderResponseDTO();
 
-		dto.setId(order.getId());
+		dto.setId(entity.getId());
 
-		dto.setClient(clientMapper.toResponseDto(order.getClient()));
-		dto.setDriver(order.getDriver() != null ? driverMapper.toResponseDto(order.getDriver()) : null);
+		dto.setClient(clientMapper.toResponseDto(entity.getClient()));
+		dto.setDriver(entity.getDriver() != null ? driverMapper.toResponseDto(entity.getDriver()) : null);
 
-		dto.setStatus(order.getStatus());
+		dto.setStatus(entity.getStatus());
 
-		dto.setStartAddress(order.getStartAddress());
-		dto.setEndAddress(order.getEndAddress());
+		dto.setStartAddress(entity.getStartAddress());
+		dto.setEndAddress(entity.getEndAddress());
 
-		dto.setStartLatitude(order.getStartLatitude());
-		dto.setStartLongitude(order.getStartLongitude());
-		dto.setEndLatitude(order.getEndLatitude());
-		dto.setEndLongitude(order.getEndLongitude());
+		dto.setStartLatitude(entity.getStartLatitude());
+		dto.setStartLongitude(entity.getStartLongitude());
+		dto.setEndLatitude(entity.getEndLatitude());
+		dto.setEndLongitude(entity.getEndLongitude());
 
-		dto.setPrice(order.getPrice());
-		dto.setBonusFare(order.getBonusFare());
+		dto.setAproximateDistance(entity.getAproximateDistance());
+		dto.setAproximateDuration(entity.getAproximateDuration());
 
-		dto.setMapScreenshotUrl(order.getMapScreenshotUrl());
-		dto.setLocationPhotoUrl(order.getLocationPhotoUrl());
+		dto.setPrice(entity.getPrice());
+		dto.setBonusFare(entity.getBonusFare());
 
-		dto.setCreatedAt(order.getCreatedAt());
-		dto.setAcceptedAt(order.getAcceptedAt());
-		dto.setStartedAt(order.getStartedAt());
-		dto.setCompletedAt(order.getCompletedAt());
-		dto.setCancelledAt(order.getCancelledAt());
-		
-		dto.setCancellationSource(order.getCancellationSource());
-		
-		dto.setTotalPrice(order.getTotalPrice());
+		dto.setCreatedAt(entity.getCreatedAt());
+		dto.setAcceptedAt(entity.getAcceptedAt());
+		dto.setStartedAt(entity.getStartedAt());
+		dto.setCompletedAt(entity.getCompletedAt());
+		dto.setCancelledAt(entity.getCancelledAt());
+
+		dto.setCancellationSource(entity.getCancellationSource());
+
+		dto.setTotalPrice(entity.getTotalPrice());
+
+		dto.setNotes(entity.getNotes());
 
 		return dto;
 	}
@@ -74,21 +78,23 @@ public class OrderMapper {
 		entity.setEndLatitude(dto.getEndLatitude());
 		entity.setEndLongitude(dto.getEndLongitude());
 
+		entity.setAproximateDistance(dto.getAproximateDistance());
+		entity.setAproximateDuration(dto.getAproximateDuration());
+
 		entity.setPrice(dto.getPrice());
 		entity.setBonusFare(dto.getBonusFare());
-
-		entity.setMapScreenshotUrl(dto.getMapScreenshotUrl());
-		entity.setLocationPhotoUrl(dto.getLocationPhotoUrl());
 
 		entity.setCreatedAt(dto.getCreatedAt());
 		entity.setAcceptedAt(dto.getAcceptedAt());
 		entity.setStartedAt(dto.getStartedAt());
 		entity.setCompletedAt(dto.getCompletedAt());
 		entity.setCancelledAt(dto.getCancelledAt());
-		
+
 		entity.setCancellationSource(dto.getCancellationSource());
-		
+
 		entity.setTotalPrice(dto.getTotalPrice());
+
+		entity.setNotes(dto.getNotes());
 
 		return entity;
 	}
@@ -106,10 +112,9 @@ public class OrderMapper {
 		entity.setEndLongitude(dto.getEndLongitude());
 
 		entity.setPrice(dto.getPrice());
-		entity.setBonusFare(dto.getBonusFare());
+		entity.setBonusFare(dto.getBonusFare() != null ? dto.getBonusFare() : BigDecimal.ZERO);
 
-		entity.setMapScreenshotUrl(dto.getMapScreenshotUrl());
-		entity.setLocationPhotoUrl(dto.getLocationPhotoUrl());
+		entity.setNotes(dto.getNotes() == "" ? null : dto.getNotes());
 
 		return entity;
 	}

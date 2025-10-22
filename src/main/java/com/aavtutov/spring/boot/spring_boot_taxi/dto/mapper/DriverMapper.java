@@ -9,14 +9,15 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
 @Component
 public class DriverMapper {
 
-	public DriverResponseDTO toResponseDto(DriverEntity driver) {
+	public DriverResponseDTO toResponseDto(DriverEntity entity) {
 
 		DriverResponseDTO dto = new DriverResponseDTO();
-		dto.setId(driver.getId());
-		dto.setTelegramId(driver.getTelegramId());
-		dto.setFullName(driver.getFullName());
-		dto.setCarModel(driver.getCarModel());
-		dto.setLicensePlate(driver.getLicensePlate());
+		dto.setId(entity.getId());
+		dto.setTelegramId(entity.getTelegramId());
+		dto.setFullName(entity.getFullName());
+		dto.setCarModel(entity.getCarModel());
+		dto.setCarColor(entity.getCarColor());
+		dto.setLicensePlate(entity.getLicensePlate());
 
 		return dto;
 	}
@@ -28,6 +29,7 @@ public class DriverMapper {
 		entity.setTelegramId(dto.getTelegramId());
 		entity.setFullName(dto.getFullName());
 		entity.setCarModel(dto.getCarModel());
+		entity.setCarColor(dto.getCarColor());
 		entity.setLicensePlate(dto.getLicensePlate());
 
 		return entity;
@@ -36,11 +38,11 @@ public class DriverMapper {
 	public DriverEntity fromCreateDto(DriverCreateDTO dto) {
 
 		DriverEntity entity = new DriverEntity();
-		entity.setTelegramId(dto.getTelegramId());
-		entity.setPhoneNumber(dto.getPhoneNumber());
-		entity.setFullName(dto.getFullName());
 		entity.setCarModel(dto.getCarModel());
+		entity.setCarColor(dto.getCarColor());
 		entity.setLicensePlate(dto.getLicensePlate());
+		entity.setDriverLicenseUrl(dto.getDriverLicenseUrl());
+		entity.setCarRegistrationUrl(dto.getCarRegistrationUrl());
 
 		return entity;
 	}
