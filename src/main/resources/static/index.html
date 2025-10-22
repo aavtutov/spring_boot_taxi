@@ -2,142 +2,165 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Book a ride | Hop-in taxi app</title>
+<link rel="stylesheet" href="index-style.css">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-body {
-	font-family: Arial, sans-serif;
-	padding: 20px;
-}
-
-.form-container {
-	max-width: 400px;
-	margin: 0 auto;
-}
-
-label, input, button {
-	display: block;
-	width: 100%;
-	margin-bottom: 10px;
-}
-</style>
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+<script src="main.js" defer></script>
 </head>
+
 <body>
 
+<div id="map" style="position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1;"></div>
 
-<button 
-    id="driver-button" 
-    class="telegram-button"
-    onclick="window.location.href = 'https://alpha-multispinous-outbully.ngrok-free.dev/driver/dashboard';">
-    I'm driver
-</button>
-
+<div id="marker-pin">
+	<div class="pin-core"></div>
+	<div class="pin-pulse" style="display:none;"></div>
+</div>
 
 
-	<div class="form-container">
-		<h2>New Order</h2>
-		<form id="orderForm">
-			<label for="startAddress">From:</label> <input type="text"
-				id="startAddress" required> <label for="endAddress">To:</label>
-			<input type="text" id="endAddress" required> <input
-				type="hidden" id="price" value="100.00"> <input
-				type="hidden" id="bonusFare" value="0.00">
 
-			<div id="statusMessage" style="color: red; margin-top: 10px;"></div>
 
-			<button type="submit">Book</button>
-		</form>
+<!-- Notes Modal -->
+<div id="notesModal" class="notes-modal hidden">
+  <div class="notes-modal-content">
+    <textarea id="notesTextarea" placeholder="Additional order details..."></textarea>
+    <button id="notesDoneButton" class="btn">Done</button>
+  </div>
+</div>
+
+
+
+<!-- Address Modal -->
+<div id="address-modal" class="modal hidden">
+  <div class="modal-header">
+    <div class="input-wrapper">
+      <img src="round-pushpin.svg" class="input-icon" alt="pin">
+      <input type="text" id="address-search-input" placeholder="Enter address..." />
+      <button id="clear-search" class="clear-btn">✕</button>
+    </div>
+    <button id="close-modal" class="close-modal-btn">✕</button>
+  </div>
+  <ul id="suggestions-list" class="suggestions"></ul>
+</div>
+
+
+<div class="form-overlay" id="formOverlay">
+
+<!-- User Menu -->
+<div class="user-menu">
+<div class="avatar-wrapper">
+  <img id="user-avatar" class="avatar" src="" alt="User Avatar" onclick="toggleUserMenu()" />
+  <span class="online-indicator"></span>
+</div>  
+  
+<div id="user-dropdown" class="dropdown hidden">
+    <button onclick="goToHistory()">Ride History</button>
+    <button onclick="goToDriver()">I am a Driver</button>
+</div>
+</div>
+
+
+
+
+
+<div>
+
+<form id="orderForm">
+
+<!-- Active Order -->
+<div id="active-order-container" style="display: none;">
+	<!-- Order Status -->
+	<div style="display: block; padding: 0px 5px;">
+		<p id="active-order-status-text"></p>
 	</div>
+	<!-- Driver Details -->
+	<div style="display: block; padding: 0px 5px;">
+		<div id="driver-info"></div>
+	</div>
+</div>
 
-	<script>
-document.addEventListener('DOMContentLoaded', () => {
-            console.log('Telegram Web App started!');
-            
-            // check Telegram WebApp initialized
-            if (window.Telegram && window.Telegram.WebApp) {
-                // initializing Web App
-                const WebApp = window.Telegram.WebApp;
-                WebApp.ready(); 
-                
-                // add a handler for submitting the form
-                document.getElementById('orderForm').addEventListener('submit', handleOrderSubmission);
-            }
-        });
-        
 
-     const API_BASE_URL = "https://alpha-multispinous-outbully.ngrok-free.dev/spring-boot-taxi";
-     
-     const TEST_LATITUDE = 55.7558;
-     const TEST_LONGITUDE = 37.6173;
+<!-- Address Text Fields -->
+<div class="form-data">
+				
+<!-- START Address -->
+<div class="input-pin">
+  <button id="pin-button-start" type="button" class="form-pin" onclick="setSelectionMode('start')">
+    <img id="pin-icon-start" src="round-pushpin.svg" class="pin-icon active" />
+  </button>
+  <input type="text" id="startAddress" placeholder="Start location" required>
+</div>
 
-     async function handleOrderSubmission(event) {
-         event.preventDefault(); // prevent standard form submission
+<!-- END Address -->
+<div class="input-pin">
+  <button id="pin-button-end" type="button" class="form-pin" onclick="setSelectionMode('end')">
+    <img id="pin-icon-end" src="round-pushpin.svg" class="pin-icon" />
+  </button>
+  <input id="endAddress" style="border:0;" type="text" placeholder="Your destination" required>
+</div>
 
-         const startAddress = document.getElementById('startAddress').value;
-         const endAddress = document.getElementById('endAddress').value;
-         const price = document.getElementById('price').value; 
-         const bonusFare = document.getElementById('bonusFare').value;
-         const statusMessage = document.getElementById('statusMessage');
+<!-- Notes -->
+<div class="input-pin">
+  <button id="pin-button-notes" type="button" class="form-pin" onclick="setSelectionMode('notes')">
+    <img id="pin-icon-notes" src="pencil.svg" class="pin-icon" />
+  </button>
+  <input id="notes" style="border:0;" type="text" placeholder="Order notes">
+</div>
 
-         const WebApp = window.Telegram.WebApp;
-         const initData = Telegram.WebApp.initData;
-         
-         if (!initData || initData.length < 5) {
-        	    statusMessage.textContent = 'Error: Telegram data not received. Restart the bot.';
-        	    statusMessage.style.color = 'red';
-        	    console.error('WebApp.initData empty or incorrect.');
-        	    return; // Stop execution to avoid sending an invalid request
-        }
-         
-         statusMessage.textContent = 'Processing...';
-         
-      // JSON Payload (OrderCreateDTO)
-         const orderPayload = {
-             startAddress: startAddress,
-             endAddress: endAddress,
+</div>
 
-             startLatitude: TEST_LATITUDE,
-             startLongitude: TEST_LONGITUDE,
-             endLatitude: TEST_LATITUDE + 0.1,
-             endLongitude: TEST_LONGITUDE + 0.1, 
 
-             price: price,
-             bonusFare: bonusFare,
+<!-- BonusFare -->
+<div id="form-bonusFare-block" style="display: none; align-items: center; gap: 5px;">
+	<button class="btn bonusFare-btn" type="button" onclick="adjustBonus(-5)">−</button>
+		<input type="number" id="bonusFare" placeholder="0" step="5" min="0" readonly>
+	<button class="btn bonusFare-btn" type="button" onclick="adjustBonus(5)">+</button>
+</div>
 
-             mapScreenshotUrl: null, 
-             locationPhotoUrl: null
-         };
-         
-         
 
-      // Spring Boot API call
-         try {
-             const response = await fetch(`${API_BASE_URL}/api/orders`, {
-                 method: 'POST',
-                 headers: {
-                     'Content-Type': 'application/json',
-                     'X-Telegram-Init-Data': initData
-                 },
-                 body: JSON.stringify(orderPayload)
-             });
+<!-- Hidden: Coordinates and Price -->
+<input type="hidden" id="startLatitude" name="startLatitude">
+<input type="hidden" id="startLongitude" name="startLongitude">
+<input type="hidden" id="endLatitude" name="endLatitude">
+<input type="hidden" id="endLongitude" name="endLongitude">
+<input type="hidden" id="price" name="price">
 
-             const result = await response.json();
 
-             if (response.ok) {
-                 statusMessage.textContent = `Order #${result.id} created! Status: ${result.status}`;
-                 statusMessage.style.color = 'green';
-             } else {
-                 statusMessage.textContent = `Error API (${response.status}): ${result.message || JSON.stringify(result)}`;
-                 statusMessage.style.color = 'red';
-             }
+<!-- Estimated Price -->				
+<div class="form-line-block" style="display: block; padding: 0px 5px;">
+	<p class="form-lines-text" id="estimatedPriceText">Estimated price: ~50.00</p>
+<hr class="form-lines-line">
+</div>
+	
+	
+<!-- Cancel Btn -->				
+<div id="form-line-block-cancel-button" style="display: none; padding: 0px 5px;">
+	<button type="button" id="cancel-order-button"><span style="padding: 0px 10px 0px 0px;">ㄨ</span>Cancel trip</button>
+<hr class="form-lines-line">
+</div>
 
-         } catch (error) {
-             console.error('Network error:', error);
-             statusMessage.textContent = 'Network error. Check your API address.';
-             statusMessage.style.color = 'red';
-         }
-     } 
-    </script>
+
+<!-- Menu + Book + Cash -->				
+<div id="form-menuBookPayment-block" style="display: none;">
+	<div style="display: block;">
+		<button type="button" class="btn menu">Menu</button>
+	</div>
+	<button type="submit" class="btn book">Book a ride</button>
+	<div style="display: block;"><button type="button" class="btn payment-type">Cash</button></div>
+</div>
+				
+</form>
+
+<div id="statusMessage" style="color: red; margin-top: 0px;"></div>
+				
+			
+</div>
+
+<!-- END of formOverlay -->		
+</div>
+
 </body>
 </html>

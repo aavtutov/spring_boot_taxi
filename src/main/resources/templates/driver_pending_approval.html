@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Waiting for approval</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+</head>
+<body>
+   	<h2 style="margin-top:100px;">Thank you for registering!</h2>
+	<p>Your documents are being reviewed by the administrator.</p>
+	<p>Current status: <strong th:text="${driverStatus}">PENDING_APPROVAL</strong></p>
+	<p>We will send you a notification once the review is complete.</p>
+</body>
+</html>

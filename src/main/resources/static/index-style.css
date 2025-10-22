@@ -1,0 +1,515 @@
+html, body {
+	font-family: system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;;
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	overflow: hidden;
+	user-select: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	-webkit-text-size-adjust: 100%;
+}
+
+::placeholder {
+	color: #95a0a6;
+	opacity: 1;
+}
+
+input {
+	display: block;
+	box-sizing: border-box;
+	background-color: transparent;
+	border-radius: 0px;
+	border: 1px #c1c1c18c solid;
+	outline: none;
+	width: 100%;
+	min-width: 0px;
+	max-width: 100%;
+	cursor: text;
+	margin: 0px;
+	padding: 10px 1px;
+	font-size: 16px;
+	font-weight: normal;
+	line-height: 24px;
+	color: rgb(0, 0, 0);
+	caret-color: rgb(0, 0, 0);
+	border-style: none none solid none;
+}
+
+button {
+	display: block;
+}
+
+.btn {
+	padding: 13px 45px;
+	border-radius: 17px;
+	font-size: 15px;
+	border: 0;
+	color: black;
+	margin-top: 10px;
+	background-color: #d5dde0;
+}
+
+.book {
+	font-weight: bold;
+	font-size: 15px;
+	color: white;
+	background-color: #000000e8;
+	width: 100%;
+	padding: 18px;
+	box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+#map {
+	height: 100%;
+	width: 100%;
+	position: absolute;
+}
+
+.form-overlay {
+	position: fixed;
+	z-index: 3;
+	border-radius: 30px;
+	bottom: 30px;
+	right: 15px;
+	left: 15px;
+	transition: opacity 0.3s ease;
+	/* doka */
+	box-shadow: rgba(0, 0, 0, 0.25) 0px 0.0625em 0.0625em,
+		rgba(0, 0, 0, 0.25) 0px 0.125em 0.5em, rgba(255, 255, 255, 0.1) 0px
+		0px 0px 1px inset;
+	/* background-color: rgba(255, 255, 255, .65); */
+	background-image: linear-gradient(hsl(0, 0%, 100%),
+		hsla(240, 100%, 50%, 0));
+	background-color: white;
+	backdrop-filter: blur(30px);
+}
+
+.form-overlay.hidden {
+	opacity: 0;
+	pointer-events: none;
+}
+
+#orderForm {
+	padding: 20px;
+	text-align: center;
+}
+
+#bonusFare {
+	text-align: center;
+	border: 0;
+	font-size: 20px;
+	font-weight: bold;
+	margin-top: 10px;
+}
+
+.bonusFare-btn {
+	color: black;
+	background-color: transparent;
+	border: 0;
+	box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+}
+
+.bonusFare-btn:active {
+	box-shadow: rgb(204, 219, 232) 3px 3px 6px 0px inset,
+		rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset;
+	background-color: transparent;
+}
+
+.form-pin {
+	width: 41px;
+	height: 38px;
+	background-color: transparent;
+	border: 0;
+	margin-left: -9px;
+}
+
+.input-pin {
+	display: flex;
+	align-items: center;
+}
+
+.form-data {
+	display: block;
+	border-radius: 16px;
+	padding: 0px 20px 0px 10px;
+	margin-bottom: 5px;
+	box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+}
+
+#marker-pin {
+	position: absolute;
+	top: 30%;
+	left: 50%;
+	transform: translate(-50%, -100%);
+	pointer-events: none;
+	z-index: 2;
+}
+
+.pin-core {
+	font-size: 45px;
+	width: 50px;
+	height: 50px;
+	background-image: url("round-pushpin.svg");
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+.payment-type {
+	display: block;
+	margin-left: 20px;
+	margin-top: 18px;
+	padding: 10px;
+	border-radius: 10px;
+	background-color: transparent;
+	box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+}
+
+.payment-type:active {
+	box-shadow: rgb(204, 219, 232) 3px 3px 6px 0px inset,
+		rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset;
+	background-color: transparent;
+}
+
+.menu {
+	display: block;
+	margin-right: 20px;
+	margin-top: 18px;
+	padding: 10px;
+	border-radius: 10px;
+	background-color: transparent;
+	box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+}
+
+.menu:active {
+	box-shadow: rgb(204, 219, 232) 3px 3px 6px 0px inset,
+		rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset;
+	background-color: transparent;
+}
+
+#active-order-container {
+	padding: 0px 5px 15px;
+	text-align: left;
+}
+
+#active-order-status-text {
+	text-align: left;
+	font-size: 17px;
+	font-weight: bold;
+	margin: 0;
+}
+
+.license-plate {
+	font-size: 11px;
+	font-weight: 600;
+	padding: 3px 5px;
+	border-radius: 3px;
+	box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+	margin: 0 6px;
+	background-color:black;
+	color:white;
+}
+
+#driver-info {
+	margin-top: 5px;
+	display: flex;
+}
+
+.form-lines-block {
+	display: block;
+	padding: 0px 5px;
+}
+
+.form-lines-text {
+	text-align: left;
+	font-size: 15px;
+}
+
+hr.form-lines-line {
+	border: 0.5px solid #c1c1c18c;
+}
+
+#cancel-order-button {
+	display: flex;
+	font-size: 15px;
+	color: red;
+	background-color: transparent;
+	border: 0;
+	padding: 10px 10px 10px 0;
+	width: 100%;
+	text-align: left;
+}
+
+.modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: white;
+	z-index: 10000;
+	display: flex;
+	flex-direction: column;
+	padding: 110px 20px 20px;
+}
+
+.modal.hidden {
+	display: none !important;
+}
+
+.modal-header {
+	position: relative;
+}
+
+.input-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.input-icon {
+	position: absolute;
+	left: 10px;
+	width: 18px;
+	height: 18px;
+	opacity: 0.1;
+}
+
+#address-search-input {
+	width: 100%;
+	padding: 14px 36px 14px 36px;
+	font-size: 16px;
+	box-sizing: border-box;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+}
+
+.clear-btn {
+	position: absolute;
+	right: 10px;
+	background: transparent;
+	border: none;
+	font-size: 16px;
+	cursor: pointer;
+	opacity: 0;
+}
+
+.clear-btn:hover {
+	opacity: 1;
+}
+
+.close-modal-btn {
+	position: absolute;
+	top: 15px;
+	right: 10px;
+	background: transparent;
+	border: none;
+	font-size: 18px;
+	/* font-weight: 400; */
+	cursor: pointer;
+	opacity: 0.5;
+	color: black;
+}
+
+.close-modal-btn:hover {
+	opacity: 1;
+}
+
+.suggestions {
+	list-style: none;
+	padding: 0;
+	margin-top: 10px;
+	overflow-y: auto;
+	max-height: 80vh;
+}
+
+.suggestions li {
+	padding: 12px;
+	border-bottom: 1px solid #eee;
+	cursor: pointer;
+}
+
+.suggestions li:hover {
+	background-color: #f5f5f5;
+}
+
+.pin-icon {
+	height: 16px;
+	opacity: 0.1;
+	transition: opacity 0.2s ease;
+	margin-top: 4px;
+}
+
+.pin-icon.active {
+	opacity: 1;
+}
+
+.notes-modal {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100vh;
+	background-color: white;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	z-index: 1000;
+	padding-top: 100px;
+}
+
+.notes-modal.hidden {
+	display: none;
+}
+
+.notes-modal-content {
+	background: white;
+	width: 90%;
+	max-width: 600px;
+	border-radius: 12px;
+	padding: 20px;
+	display: flex;
+	flex-direction: column;
+}
+
+#notesTextarea {
+	width: 100%;
+	height: 200px;
+	font-size: 16px;
+	padding: 12px;
+	border-radius: 8px;
+	border: 1px solid #ccc;
+	resize: none;
+	box-sizing: border-box;
+}
+
+#notesDoneButton {
+	margin-top: 12px;
+	padding: 10px 16px;
+	font-size: 16px;
+	background-color: black;
+	color: white;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+input.readonly {
+	cursor: not-allowed;
+	color: #95a0a6;
+}
+
+.user-menu {
+	position: absolute;
+	top: -70px;
+	right: 0;
+	z-index: 3;
+}
+
+.avatar {
+	width: 50px;
+	height: 50px;
+	border-radius: 50%;
+	cursor: pointer;
+	border: 3px solid white;
+	transition: opacity 0.3s ease;
+}
+
+.dropdown {
+	margin-top: 8px;
+	background: white;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 5px 0;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+	position: absolute;
+	right: 0;
+	width: 160px;
+}
+
+.dropdown button {
+	width: 100%;
+	background: none;
+	border: none;
+	padding: 10px;
+	text-align: left;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.dropdown button:hover {
+	background-color: #f0f0f0;
+}
+
+.dropdown.hidden {
+	display: none;
+}
+
+.avatar-wrapper {
+	position: relative;
+	display: inline-block;
+}
+
+.online-indicator {
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	width: 10px;
+	height: 10px;
+	background-color: rgb(72, 221, 126);
+	border: 2px solid #fff;
+	border-radius: 50%;
+	box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+}
+
+.pin-pulse {
+	width: 300px;
+	height: 300px;;
+	background: rgba(76, 175, 80, 0.5);
+	border-radius: 50%;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	animation: pulse-ring 1s ease-out infinite;
+	z-index: 1;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
+#estimatedPriceText.active-price-format {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 4px 0;
+}
+
+#estimatedPriceText .price-label {
+	flex-grow: 1;
+}
+
+.price-label {
+	display: flex;
+	align-items: center;
+	color: #444;
+}
+
+.price-icon {
+	margin-right: 6px;
+}
+
+.price-amount {
+	color: #444;
+}
