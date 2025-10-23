@@ -5,43 +5,32 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.OrderMapper;
-import com.aavtutov.spring.boot.spring_boot_taxi.security.TelegramWebAppAuthValidator;
-import com.aavtutov.spring.boot.spring_boot_taxi.service.DriverService;
-import com.aavtutov.spring.boot.spring_boot_taxi.service.OrderService;
+//Removed unused imports (DriverService, OrderService, OrderMapper, TelegramWebAppAuthValidator)
 
 /**
  * Spring MVC Controller responsible for serving HTML views (Thymeleaf
  * templates) for the Telegram WebApp Mini client interface.
  *
  * <p>
- * Handles requests coming directly from the Telegram WebApp context.
+ * Handles requests coming directly from the Telegram WebApp context and
+ * prepares necessary data for the frontend.
  * </p>
  */
 @Controller
 public class ClientWebController {
 
-	private final DriverService driverService;
-	private final OrderService orderService;
-	private final OrderMapper orderMapper;
-	private final TelegramWebAppAuthValidator authValidator;
+	// Rationale: No instance fields are needed since this controller currently only
+	// performs simple view rendering and model attribute setting.
 
 	/**
-	 * Constructs the controller, injecting necessary services and the WebApp
-	 * validator.
-	 *
-	 * @param driverService Service for driver-related business logic.
-	 * @param orderService  Service for order-related business logic.
-	 * @param authValidator Component to validate Telegram WebApp authentication
-	 *                      data.
-	 * @param orderMapper   Utility for converting order entities to DTOs.
+	 * Constructs the ClientWebController. *
+	 * <p>
+	 * Note: Currently, no service dependencies are required for this controller's
+	 * functionality.
+	 * </p>
 	 */
-	public ClientWebController(DriverService driverService, OrderService orderService,
-			TelegramWebAppAuthValidator authValidator, OrderMapper orderMapper) {
-		this.driverService = driverService;
-		this.orderService = orderService;
-		this.authValidator = authValidator;
-		this.orderMapper = orderMapper;
+	public ClientWebController() {
+		// Empty constructor
 	}
 
 	/**
@@ -64,8 +53,7 @@ public class ClientWebController {
 	public String getClientOrderHistoryPage(@RequestParam String initData, Model model) {
 
 		// Rationale: The initData is crucial for subsequent API calls made by the
-		// WebApp
-		// to authenticate the user and retrieve their specific data.
+		// WebApp to authenticate the user and retrieve their specific data.
 		model.addAttribute("initData", initData);
 
 		// Return the name of the Thymeleaf view template
