@@ -12,9 +12,7 @@ body {
     z-index: 1000;
     padding: 65px 20px 15px;
     display: block;
-    /* justify-content: space-between;
-    align-items: center; */
-    box-shadow: rgba(0, 0, 0, 0.15) 0px 5px 15px 0px;
+    box-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px 0;
 }
 
 .header h1 {
@@ -38,7 +36,7 @@ body {
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 15px;
-    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    box-shadow: rgba(100, 100, 111, 0.2) 0 7px 29px 0;
 }
 
 .order-header {
