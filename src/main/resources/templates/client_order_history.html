@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
-    <title>Ride History</title>
+    <title>Ride History | Hop-in taxi app</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" th:href="@{/style.css}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -23,7 +23,7 @@ const initData = Telegram.WebApp?.initData || Telegram.WebApp?.initDataUnsafe ||
 const ordersList = document.getElementById('available-orders-list');
 
 if (!initData) {
-    alert('Ошибка: Не удалось получить данные Telegram.');
+    alert('Error: Unable to retrieve Telegram data.');
 }
 
 function formatDate(datetime) {
@@ -46,13 +46,13 @@ async function loadAvailableOrders() {
             }
         });
 
-        if (!response.ok) throw new Error('Ошибка загрузки заказов');
+        if (!response.ok) throw new Error('Failed to load ride history.');
 
         const orders = await response.json();
         renderOrders(orders);
     } catch (err) {
-        console.error('Load available orders error:', err);
-        ordersList.innerHTML = '<div class="error">Ошибка загрузки заказов</div>';
+        console.error('Error loading ride history:', err);
+        ordersList.innerHTML = '<div class="error">Failed to load ride history.</div>';
     }
 }
 
@@ -60,7 +60,7 @@ function renderOrders(orders) {
     ordersList.innerHTML = '';
 
     if (orders.length === 0) {
-        ordersList.innerHTML = '<div class="empty">No any orders yet.</div>';
+        ordersList.innerHTML = '<div class="empty">No rides yet.</div>';
         return;
     }
 
@@ -86,7 +86,7 @@ function renderOrders(orders) {
             ${order.notes ? `<div class="order-notes">📌 ${order.notes}</div>` : ''}
             <div class="order-price">
                 <strong>Total:</strong> ${priceTotal} 
-                ${order.bonusFare ? `<span class="bonus">(including your tip: ${order.bonusFare})</span>` : ''}
+                ${order.bonusFare ? `<span class="bonus">(includes your tip: ${order.bonusFare})</span>` : ''}
             </div>
         `;
 
@@ -101,10 +101,10 @@ function goBack() {
 
 document.addEventListener('DOMContentLoaded', () => {
     Telegram.WebApp.ready();
-    
-	// Показываем кнопку "Back"
+
+    // Show the Telegram "Back" button
     Telegram.WebApp.BackButton.show();
- 	// Назначаем поведение на кнопку
+    // Handle back button click
     Telegram.WebApp.BackButton.onClick(() => {
         window.location.href = `/index.html?initData=${encodeURIComponent(initData)}`;
     });
