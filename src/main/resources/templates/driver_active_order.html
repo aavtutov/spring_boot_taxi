@@ -130,9 +130,9 @@
     </div>
 
     <div id="update-menu" class="update-menu hidden">
-        <button id="btn-client-in-car" class="btn-menu hidden">Клиент в машине</button>
-        <button id="btn-complete-trip" class="btn-menu">Завершить поездку</button>
-        <button id="btn-cancel-trip" class="btn-menu">Отменить поездку</button>
+        <button id="btn-client-in-car" class="btn-menu hidden">Client in Car</button>
+        <button id="btn-complete-trip" class="btn-menu">Complete Trip</button>
+        <button id="btn-cancel-trip" class="btn-menu">Cancel Trip</button>
     </div>
 </div>
 
@@ -143,20 +143,20 @@
 
 
     if (!initData) {
-        alert('Ошибка: Не удалось получить данные Telegram.');
+        alert('Error: Unable to retrieve Telegram data.');
         throw new Error('No initData');
     }
 
-    // ✅ Проверяем до использования order.*
+    // Check before using order
     if (!order || noActiveOrder) {
-        alert('У вас нет активного заказа');
+        alert('You have no active orders.');
         window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
     } else {
         Telegram.WebApp.ready();
 
-        // Показываем кнопку "Back"
+        // Show the Telegram "Back" button
         Telegram.WebApp.BackButton.show();
-        // Назначаем поведение на кнопку
+        // Handle back button click
         Telegram.WebApp.BackButton.onClick(() => {
             window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
         });
@@ -178,7 +178,7 @@
 
         new mapboxgl.Marker({color: 'black'})
             .setLngLat([startLng, startLat])
-            .setPopup(new mapboxgl.Popup().setText("Начало поездки"))
+            .setPopup(new mapboxgl.Popup().setText("Start"))
             .addTo(map);
 
         const flagMarker = document.createElement('div');
@@ -187,7 +187,7 @@
 
         new mapboxgl.Marker(flagMarker)
             .setLngLat([endLng, endLat])
-            .setPopup(new mapboxgl.Popup().setText("Финиш"))
+            .setPopup(new mapboxgl.Popup().setText("Finish"))
             .addTo(map);
 
         const route = {
@@ -231,7 +231,7 @@
                 }
             });
 
-            // Установка границ маршрута
+            // Fit map bounds to route
             const bounds = new mapboxgl.LngLatBounds();
             routeGeo.coordinates.forEach(coord => bounds.extend(coord));
             map.fitBounds(bounds, {padding: 110});
@@ -260,12 +260,12 @@
                     return res.json();
                 })
                 .then(updatedOrder => {
-                    alert('Успешно обновлено!');
+                    alert('Update successful!');
                     location.reload();
                 })
                 .catch(err => {
-                    console.error('Ошибка обновления заказа:', err);
-                    alert('Ошибка: ' + err.message);
+                    console.error('Order update error:', err);
+                    alert('Error: ' + err.message);
                 });
         }
 
@@ -309,7 +309,7 @@
             if (order.status === 'ACCEPTED' && btnClientInCar) {
                 btnClientInCar.classList.remove('hidden');
                 btnClientInCar.addEventListener('click', () => {
-                    const confirmed = confirm('Клиент уже в машине и начинаем поездку?');
+                    const confirmed = confirm('Is the client in the car? Start the trip?');
                     if (confirmed) {
                         updateOrderStatus('START_TRIP');
                     }
@@ -317,14 +317,14 @@
             }
 
             btnComplete?.addEventListener('click', () => {
-                const confirmed = confirm('Завершить поездку?');
+                const confirmed = confirm('Complete the trip?');
                 if (confirmed) {
                     updateOrderStatus('COMPLETE');
                 }
             });
 
             btnCancel?.addEventListener('click', () => {
-                const confirmed = confirm('Вы уверены, что хотите отменить поездку?');
+                const confirmed = confirm('Are you sure you want to cancel the trip?');
                 if (confirmed) {
                     updateOrderStatus('CANCEL_BY_DRIVER');
                 }
