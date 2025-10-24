@@ -109,7 +109,7 @@ public class DriverWebController {
 	 * @param model    The Spring Model for passing data to the Thymeleaf template.
 	 * @return The name of the Thymeleaf template ("active_orders").
 	 */
-	@GetMapping("/driver/active-orders")
+	@GetMapping("/driver/active-order")
 	public String getActiveOrdersPage(@RequestParam String initData, Model model) {
 		Long telegramId = authValidator.validate(initData);
 		DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
@@ -129,7 +129,7 @@ public class DriverWebController {
 			model.addAttribute("noActiveOrder", true);
 		}
 
-		return "active_orders";
+		return "driver_active_order";
 	}
 
 }
