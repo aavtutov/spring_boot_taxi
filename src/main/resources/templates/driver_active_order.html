@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Active Order | Hop-in taxi app</title>
     <style>
@@ -125,10 +125,9 @@
 <div th:if="${order != null}">
     <div id="map"></div>
 
-<div class="top-buttons">
-    <!-- <button class="btn-with-text" onclick="goBack()">← go back</button> -->
-    <button class="btn-with-text" onclick="toggleMenu()">Update order</button>
-</div>
+    <div class="top-buttons">
+        <button class="btn-with-text" onclick="toggleMenu()">Update order</button>
+    </div>
 
     <div id="update-menu" class="update-menu hidden">
         <button id="btn-client-in-car" class="btn-menu hidden">Клиент в машине</button>
@@ -138,203 +137,200 @@
 </div>
 
 <script th:inline="javascript">
-const initData = Telegram.WebApp?.initData || Telegram.WebApp?.initDataUnsafe || '';
-const order = /*[[${order}]]*/ null;
-const noActiveOrder = /*[[${noActiveOrder}]]*/ false;
+    const initData = Telegram.WebApp?.initData || Telegram.WebApp?.initDataUnsafe || '';
+    const order = /*[[${order}]]*/ null;
+    const noActiveOrder = /*[[${noActiveOrder}]]*/ false;
 
 
-
-if (!initData) {
-    alert('Ошибка: Не удалось получить данные Telegram.');
-    throw new Error('No initData');
-}
-
-// ✅ Проверяем до использования order.*
-if (!order || noActiveOrder) {
-    alert('У вас нет активного заказа');
-    window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-} else {
-    Telegram.WebApp.ready();
-    
-	// Показываем кнопку "Back"
-    Telegram.WebApp.BackButton.show();
- 	// Назначаем поведение на кнопку
-    Telegram.WebApp.BackButton.onClick(() => {
-    	window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-    });
-
-    const startLat = parseFloat(order.startLatitude);
-    const startLng = parseFloat(order.startLongitude);
-    const endLat = parseFloat(order.endLatitude);
-    const endLng = parseFloat(order.endLongitude);
-
-    const mapboxToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWdmOTB3MmswNWpoMmlzYzBpYW5sY3QwIn0.SmxMkvM66aGaoCJs45YX3g';
-    mapboxgl.accessToken = mapboxToken;
-
-    const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v11',
-        center: [startLng, startLat],
-        zoom: 12
-    });
-
-    new mapboxgl.Marker({ color: 'black' })
-        .setLngLat([startLng, startLat])
-        .setPopup(new mapboxgl.Popup().setText("Начало поездки"))
-        .addTo(map);
-
-    const flagMarker = document.createElement('div');
-    flagMarker.textContent = '🏁';
-    flagMarker.style.fontSize = '24px';
-    
-    new mapboxgl.Marker(flagMarker)
-    .setLngLat([endLng, endLat])
-    .setPopup(new mapboxgl.Popup().setText("Финиш"))
-    .addTo(map);
-
-    const route = {
-        type: 'Feature',
-        geometry: {
-            type: 'LineString',
-            coordinates: [
-                [startLng, startLat],
-                [endLng, endLat]
-            ]
-        }
-    };
-
-    async function getRoute(start, end) {
-        const query = await fetch(
-            `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`
-        );
-        const data = await query.json();
-        return data.routes[0].geometry;
+    if (!initData) {
+        alert('Ошибка: Не удалось получить данные Telegram.');
+        throw new Error('No initData');
     }
-    
-    map.on('load', async () => {
-        const routeGeo = await getRoute([startLng, startLat], [endLng, endLat]);
 
-        map.addSource('route', {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                geometry: routeGeo
-            }
-        });
-
-        map.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: {
-                'line-color': '#000',
-                'line-width': 5
-            }
-        });
-
-        // Установка границ маршрута
-        const bounds = new mapboxgl.LngLatBounds();
-        routeGeo.coordinates.forEach(coord => bounds.extend(coord));
-        map.fitBounds(bounds, { padding: 110 });
-    });
-
-    function goBack() {
+    // ✅ Проверяем до использования order.*
+    if (!order || noActiveOrder) {
+        alert('У вас нет активного заказа');
         window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-    }
+    } else {
+        Telegram.WebApp.ready();
 
-    function toggleMenu() {
-        document.getElementById('update-menu')?.classList.toggle('hidden');
-    }
-
-    function updateOrderStatus(action) {
-        const body = { action };
-        
-        fetch(`/api/orders/${order.id}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData
-            },
-            body: JSON.stringify(body)
-        })
-        .then(res => {
-            if (!res.ok) return res.text().then(t => { throw new Error(t); });
-            return res.json();
-        })
-        .then(updatedOrder => {
-            alert('Успешно обновлено!');
-            location.reload();
-        })
-        .catch(err => {
-            console.error('Ошибка обновления заказа:', err);
-            alert('Ошибка: ' + err.message);
+        // Показываем кнопку "Back"
+        Telegram.WebApp.BackButton.show();
+        // Назначаем поведение на кнопку
+        Telegram.WebApp.BackButton.onClick(() => {
+            window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
         });
-    }
-    
-    
-    const HEARTBEAT_INTERVAL = 30000;
-    let heartbeatTimer = null;
-    
-    
-    async function sendHeartbeat() {
-        try {
-            await fetch('/api/drivers/heartbeat', {
-                method: 'POST',
+
+        const startLat = parseFloat(order.startLatitude);
+        const startLng = parseFloat(order.startLongitude);
+        const endLat = parseFloat(order.endLatitude);
+        const endLng = parseFloat(order.endLongitude);
+
+        const mapboxToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWdmOTB3MmswNWpoMmlzYzBpYW5sY3QwIn0.SmxMkvM66aGaoCJs45YX3g';
+        mapboxgl.accessToken = mapboxToken;
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [startLng, startLat],
+            zoom: 12
+        });
+
+        new mapboxgl.Marker({color: 'black'})
+            .setLngLat([startLng, startLat])
+            .setPopup(new mapboxgl.Popup().setText("Начало поездки"))
+            .addTo(map);
+
+        const flagMarker = document.createElement('div');
+        flagMarker.textContent = '🏁';
+        flagMarker.style.fontSize = '24px';
+
+        new mapboxgl.Marker(flagMarker)
+            .setLngLat([endLng, endLat])
+            .setPopup(new mapboxgl.Popup().setText("Финиш"))
+            .addTo(map);
+
+        const route = {
+            type: 'Feature',
+            geometry: {
+                type: 'LineString',
+                coordinates: [
+                    [startLng, startLat],
+                    [endLng, endLat]
+                ]
+            }
+        };
+
+        async function getRoute(start, end) {
+            const query = await fetch(
+                `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`
+            );
+            const data = await query.json();
+            return data.routes[0].geometry;
+        }
+
+        map.on('load', async () => {
+            const routeGeo = await getRoute([startLng, startLat], [endLng, endLat]);
+
+            map.addSource('route', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    geometry: routeGeo
+                }
+            });
+
+            map.addLayer({
+                id: 'route',
+                type: 'line',
+                source: 'route',
+                layout: {'line-join': 'round', 'line-cap': 'round'},
+                paint: {
+                    'line-color': '#000',
+                    'line-width': 5
+                }
+            });
+
+            // Установка границ маршрута
+            const bounds = new mapboxgl.LngLatBounds();
+            routeGeo.coordinates.forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds, {padding: 110});
+        });
+
+
+        function toggleMenu() {
+            document.getElementById('update-menu')?.classList.toggle('hidden');
+        }
+
+        function updateOrderStatus(action) {
+            const body = {action};
+
+            fetch(`/api/orders/${order.id}`, {
+                method: 'PATCH',
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-Telegram-Init-Data': initData
-                }
-            });
-        } catch (error) {
-            console.error('Heartbeat error:', error);
-            stopHeartbeat();
+                },
+                body: JSON.stringify(body)
+            })
+                .then(res => {
+                    if (!res.ok) return res.text().then(t => {
+                        throw new Error(t);
+                    });
+                    return res.json();
+                })
+                .then(updatedOrder => {
+                    alert('Успешно обновлено!');
+                    location.reload();
+                })
+                .catch(err => {
+                    console.error('Ошибка обновления заказа:', err);
+                    alert('Ошибка: ' + err.message);
+                });
         }
-    }
-    
-    function startHeartbeat() {
-        if (heartbeatTimer) return;
-        sendHeartbeat();
-        heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
-    }
 
-    function stopHeartbeat() {
-        clearInterval(heartbeatTimer);
-        heartbeatTimer = null;
-    }
-    
-    
 
-    document.addEventListener('DOMContentLoaded', () => {
-    	startHeartbeat();
-        const btnClientInCar = document.getElementById('btn-client-in-car');
-        const btnComplete = document.getElementById('btn-complete-trip');
-        const btnCancel = document.getElementById('btn-cancel-trip');
+        const HEARTBEAT_INTERVAL = 30000;
+        let heartbeatTimer = null;
 
-        if (order.status === 'ACCEPTED' && btnClientInCar) {
-            btnClientInCar.classList.remove('hidden');
-            btnClientInCar.addEventListener('click', () => {
-                const confirmed = confirm('Клиент уже в машине и начинаем поездку?');
+
+        async function sendHeartbeat() {
+            try {
+                await fetch('/api/drivers/heartbeat', {
+                    method: 'POST',
+                    headers: {
+                        'X-Telegram-Init-Data': initData
+                    }
+                });
+            } catch (error) {
+                console.error('Heartbeat error:', error);
+                stopHeartbeat();
+            }
+        }
+
+        function startHeartbeat() {
+            if (heartbeatTimer) return;
+            sendHeartbeat();
+            heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+        }
+
+        function stopHeartbeat() {
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = null;
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            startHeartbeat();
+            const btnClientInCar = document.getElementById('btn-client-in-car');
+            const btnComplete = document.getElementById('btn-complete-trip');
+            const btnCancel = document.getElementById('btn-cancel-trip');
+
+            if (order.status === 'ACCEPTED' && btnClientInCar) {
+                btnClientInCar.classList.remove('hidden');
+                btnClientInCar.addEventListener('click', () => {
+                    const confirmed = confirm('Клиент уже в машине и начинаем поездку?');
+                    if (confirmed) {
+                        updateOrderStatus('START_TRIP');
+                    }
+                });
+            }
+
+            btnComplete?.addEventListener('click', () => {
+                const confirmed = confirm('Завершить поездку?');
                 if (confirmed) {
-                    updateOrderStatus('START_TRIP');
+                    updateOrderStatus('COMPLETE');
                 }
             });
-        }
 
-        btnComplete?.addEventListener('click', () => {
-        	const confirmed = confirm('Завершить поездку?');
-            if (confirmed) {
-            	updateOrderStatus('COMPLETE');
-            }
+            btnCancel?.addEventListener('click', () => {
+                const confirmed = confirm('Вы уверены, что хотите отменить поездку?');
+                if (confirmed) {
+                    updateOrderStatus('CANCEL_BY_DRIVER');
+                }
+            });
         });
-
-        btnCancel?.addEventListener('click', () => {
-        	const confirmed = confirm('Вы уверены, что хотите отменить поездку?');
-            if (confirmed) {
-                updateOrderStatus('CANCEL_BY_DRIVER');
-            }
-        });
-    });
-}
+    }
 </script>
 </body>
 
