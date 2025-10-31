@@ -114,3 +114,9 @@ hr {
     padding: 20px;
     color: #666;
 }
+
+.order-price.no-price {
+    font-size: 14px;
+    font-weight: 400;
+    color: #666666;
+}

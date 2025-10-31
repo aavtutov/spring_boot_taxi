@@ -131,5 +131,32 @@ public class DriverWebController {
 
 		return "driver_active_order";
 	}
+	
+	/**
+	 * Serves the driver's order history page, typically accessed via the Telegram
+	 * WebApp.
+	 *
+	 * <p>
+	 * Endpoint: GET /driver/orders/history
+	 * </p>
+	 *
+	 * @param initData The authentication and user data provided by the Telegram
+	 *                 WebApp client. // TODO: [SECURITY] Implement explicit
+	 *                 validation of initData here or within a Filter/Interceptor //
+	 *                 before processing the request to ensure it is authentic and
+	 *                 hasn't been tampered with.
+	 * @param model    The Spring Model for passing data to the Thymeleaf template.
+	 * @return The name of the Thymeleaf template ("driver_order_history").
+	 */
+	@GetMapping("/driver/orders-history")
+	public String getClientOrderHistoryPage(@RequestParam String initData, Model model) {
+
+		// Rationale: The initData is crucial for subsequent API calls made by the
+		// WebApp to authenticate the user and retrieve their specific data.
+		model.addAttribute("initData", initData);
+
+		// Return the name of the Thymeleaf view template
+		return "driver_orders_history";
+	}
 
 }

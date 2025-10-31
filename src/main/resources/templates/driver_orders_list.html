@@ -13,6 +13,7 @@
 <div class="header">
     <h1>New Orders</h1>
     <div style="position: relative; display:block; top: 10px; text-align:center;">
+        <button class="btn btn-additional" onclick="goToHistory()">order history</button>
         <button class="btn btn-additional" onclick="goToActives()">to active →</button>
     </div>
 </div>
@@ -91,7 +92,7 @@
         ordersList.innerHTML = '';
 
         if (orders.length === 0) {
-            ordersList.innerHTML = '<div class="empty">Нет доступных заказов</div>';
+            ordersList.innerHTML = '<div class="empty">No rides yet.</div>';
             return;
         }
 
@@ -150,6 +151,10 @@
 
     function goToActives() {
         window.location.href = `/driver/active-order?initData=${encodeURIComponent(initData)}`;
+    }
+
+    function goToHistory() {
+        window.location.href = `/driver/orders-history?initData=${encodeURIComponent(initData)}`;
     }
 
     document.addEventListener('DOMContentLoaded', () => {

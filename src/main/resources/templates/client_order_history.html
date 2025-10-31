@@ -68,13 +68,40 @@
             card.className = 'order-card';
 
             const dateFormatted = formatDate(order.createdAt || order.date || Date.now());
-
             const priceTotal = order.price + (order.bonusFare || 0);
+
+            // Определяем статус и приводим его к верхнему регистру для надежности
+            const status = (order.status || '').toUpperCase();
+
+            // --- Блок цены / статуса ---
+            let priceStatusBlock = '';
+
+            if (status === 'COMPLETED') {
+                // 1. Для COMPLETED: показываем полную цену
+                priceStatusBlock = `
+                <div class="order-price">
+                    <strong>Total:</strong> ${priceTotal}
+                    ${order.bonusFare ? `<span class="bonus">(includes your tip: ${order.bonusFare})</span>` : ''}
+                </div>
+            `;
+            } else if (status === 'CANCELED') {
+                priceStatusBlock = `
+                <div class="order-price no-price">
+                    Trip cancelled
+                </div>
+            `;
+            } else {
+                priceStatusBlock = `
+                <div class="order-price no-price">
+                    In progress...
+                </div>
+            `;
+            }
 
             card.innerHTML = `
             <div class="order-header">
                 <span class="order-date">${dateFormatted}</span>
-                <span class="order-status">${order.status}</span>
+                <span class="order-status">${order.status || 'N/A'}</span>
             </div>
             ${order.driver ? `<div class="order-car">
                     ${order.driver.carModel} ${order.driver.carColor} • ${order.driver.licensePlate}
@@ -83,11 +110,8 @@
             <div class="order-address"><strong>⏤</strong> ${order.startAddress}</div>
             <div class="order-address"><strong>⏤</strong> ${order.endAddress}</div>
             ${order.notes ? `<div class="order-notes">📌 ${order.notes}</div>` : ''}
-            <div class="order-price">
-                <strong>Total:</strong> ${priceTotal} 
-                ${order.bonusFare ? `<span class="bonus">(includes your tip: ${order.bonusFare})</span>` : ''}
-            </div>
-        `;
+
+            ${priceStatusBlock} `;
 
             ordersList.appendChild(card);
         });

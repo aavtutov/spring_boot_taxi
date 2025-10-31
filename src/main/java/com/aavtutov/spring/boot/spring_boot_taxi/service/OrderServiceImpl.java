@@ -38,15 +38,12 @@ public class OrderServiceImpl implements OrderService {
 	private final MapboxRoutingService mapboxRoutingService;
 	private final TelegramBotService telegramBotService;
 
-	private static final List<OrderStatus> ACTIVE_ORDER_STATUSES = List.of(
-			OrderStatus.PENDING,
-			OrderStatus.ACCEPTED,
+	private static final List<OrderStatus> ACTIVE_ORDER_STATUSES = List.of(OrderStatus.PENDING, OrderStatus.ACCEPTED,
 			OrderStatus.IN_PROGRESS);
 
 	public OrderServiceImpl(OrderRepository orderRepository, DriverRepository driverRepository,
 			ClientRepository clientRepository, OrderValidator orderValidator, FareCalculator fareCalculator,
-			MapboxRoutingService mapboxRoutingService,
-			TelegramBotService telegramBotService) {
+			MapboxRoutingService mapboxRoutingService, TelegramBotService telegramBotService) {
 		this.orderRepository = orderRepository;
 		this.driverRepository = driverRepository;
 		this.clientRepository = clientRepository;
@@ -123,14 +120,14 @@ public class OrderServiceImpl implements OrderService {
 		order.setDriver(driver);
 		order.setStatus(OrderStatus.ACCEPTED);
 		order.setAcceptedAt(Instant.now());
-		
+
 		OrderEntity savedOrder = orderRepository.save(order);
-		
+
 		if (order.getDriver().getTelegramChatId() != null) {
-	        String message = "🚕 Your driver is already on the way!";
-	        telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
-	    }
-		
+			String message = "🚕 Your driver is already on the way!";
+			telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
+		}
+
 		return savedOrder;
 	}
 
@@ -163,14 +160,14 @@ public class OrderServiceImpl implements OrderService {
 		order.setStatus(OrderStatus.COMPLETED);
 		order.setPrice(calculatedPrice);
 		order.setTotalPrice(calculatedPrice.add(order.getBonusFare()));
-		
+
 		OrderEntity savedOrder = orderRepository.save(order);
-		
+
 		if (order.getDriver().getTelegramChatId() != null) {
-	        String message = "🏁 Your ride was completed!" + "\nTotal Price: " + savedOrder.getTotalPrice();
-	        telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
-	    }
-		
+			String message = "🏁 Your ride was completed!" + "\nTotal Price: " + savedOrder.getTotalPrice();
+			telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
+		}
+
 		return savedOrder;
 	}
 
@@ -184,14 +181,14 @@ public class OrderServiceImpl implements OrderService {
 		order.setStatus(OrderStatus.CANCELED);
 		order.setCancellationSource(OrderCancellationSource.DRIVER);
 		order.setCancelledAt(Instant.now());
-		
+
 		OrderEntity savedOrder = orderRepository.save(order);
-		
+
 		if (order.getDriver().getTelegramChatId() != null) {
-	        String message = "Your ride was cancelled by the driver";
-	        telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
-	    }
-		
+			String message = "Your ride was cancelled by the driver";
+			telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
+		}
+
 		return savedOrder;
 	}
 
@@ -205,20 +202,16 @@ public class OrderServiceImpl implements OrderService {
 		order.setStatus(OrderStatus.CANCELED);
 		order.setCancellationSource(OrderCancellationSource.CLIENT);
 		order.setCancelledAt(Instant.now());
-		
-		OrderEntity savedOrder = orderRepository.save(order);
-		
-		if (order.getDriver() != null && order.getDriver().getTelegramChatId() != null) {
-	        String message = String.format(
-	            "Customer cancelled the order #%d\nОт: %s\nДо: %s",
-	            order.getId(),
-	            order.getStartAddress(),
-	            order.getEndAddress()
-	        );
 
-	        telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
-	    }
-		
+		OrderEntity savedOrder = orderRepository.save(order);
+
+		if (order.getDriver() != null && order.getDriver().getTelegramChatId() != null) {
+			String message = String.format("Customer cancelled the order #%d\nОт: %s\nДо: %s", order.getId(),
+					order.getStartAddress(), order.getEndAddress());
+
+			telegramBotService.sendMessage(order.getDriver().getTelegramChatId(), message);
+		}
+
 		return savedOrder;
 	}
 
@@ -248,6 +241,11 @@ public class OrderServiceImpl implements OrderService {
 	public OrderEntity findCurrentOrderByClientId(Long clientId) {
 		return orderRepository.findTopByClientIdOrderByCreatedAtDesc(clientId)
 				.orElseThrow(() -> new NoContentException("Client has no any orders"));
+	}
+
+	@Override
+	public List<OrderEntity> findOrdersByDriverId(Long driverId) {
+		return orderRepository.findAllByDriverIdOrderByCreatedAtDesc(driverId);
 	}
 
 }

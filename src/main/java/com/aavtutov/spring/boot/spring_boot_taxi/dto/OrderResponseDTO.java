@@ -92,6 +92,11 @@ public class OrderResponseDTO {
 	 * The estimated duration of the planned trip (in minutes).
 	 */
 	private BigDecimal aproximateDuration;
+	
+	/**
+	 * The actual duration of the completed trip (in minutes).
+	 */
+	private BigDecimal actualDuration;
 
 	/**
 	 * The initial base price of the ride, calculated upon creation.

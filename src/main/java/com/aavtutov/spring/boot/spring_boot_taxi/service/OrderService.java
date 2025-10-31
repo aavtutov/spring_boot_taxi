@@ -31,5 +31,7 @@ public interface OrderService {
 	List<OrderEntity> findOrdersByClientId(Long clientId);
 	
 	OrderEntity findCurrentOrderByClientId(Long clientId);
+	
+	List<OrderEntity> findOrdersByDriverId(Long driverId);
 
 }

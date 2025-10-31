@@ -53,6 +53,19 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
 	List<OrderEntity> findAllByClientIdOrderByCreatedAtDesc(Long clientId);
 
 	/**
+	 * Retrieves all orders accepted by a specific driver, sorted by creation date in
+	 * descending order.
+	 *
+	 * <p>
+	 * Used for displaying the driver's historical list of orders.
+	 * </p>
+	 *
+	 * @param driverId The ID of the driver.
+	 * @return A list of {@link OrderEntity}, from newest to oldest.
+	 */
+	List<OrderEntity> findAllByDriverIdOrderByCreatedAtDesc(Long driverId);
+
+	/**
 	 * Finds the single most recently created order by a specific client.
 	 *
 	 * <p>

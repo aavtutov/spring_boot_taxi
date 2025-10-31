@@ -40,6 +40,7 @@ public class OrderMapper {
 
 		dto.setAproximateDistance(entity.getAproximateDistance());
 		dto.setAproximateDuration(entity.getAproximateDuration());
+		dto.setActualDuration(entity.getActualDuration());
 
 		dto.setPrice(entity.getPrice());
 		dto.setBonusFare(entity.getBonusFare());
@@ -80,6 +81,7 @@ public class OrderMapper {
 
 		entity.setAproximateDistance(dto.getAproximateDistance());
 		entity.setAproximateDuration(dto.getAproximateDuration());
+		entity.setActualDuration(dto.getActualDuration());
 
 		entity.setPrice(dto.getPrice());
 		entity.setBonusFare(dto.getBonusFare());

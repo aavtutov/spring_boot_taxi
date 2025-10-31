@@ -267,4 +267,23 @@ public class OrderController {
 		return orderMapper.toResponseDto(order);
 	}
 
+	/**
+	 * Retrieves the order history for the authenticated driver.
+	 *
+	 * <p>
+	 * Endpoint: GET /api/orders/driver-history
+	 * </p>
+	 *
+	 * @param initData The authentication header from the Telegram WebApp (driver).
+	 * @return A list of the driver's past orders.
+	 */
+	@GetMapping("/driver-history")
+	public List<OrderResponseDTO> getDriverOrderHistory(@RequestHeader("X-Telegram-Init-Data") String initData) {
+		Long telegramId = authValidator.validate(initData);
+		Long driverId = driverService.findDriverByTelegramId(telegramId).getId();
+		List<OrderEntity> orders = orderService.findOrdersByDriverId(driverId);
+		return orders.stream().map(orderMapper::toResponseDto).toList();
+	}
+	
+	
 }
