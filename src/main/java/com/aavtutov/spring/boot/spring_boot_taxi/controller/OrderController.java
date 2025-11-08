@@ -248,22 +248,22 @@ public class OrderController {
 	}
 
 	/**
-	 * Retrieves the single active order for the authenticated client, if one
-	 * exists.
+	 * Retrieves the client's most recently created order, regardless of status, if
+	 * one exists.
 	 *
 	 * <p>
 	 * Endpoint: GET /api/orders/client-current
 	 * </p>
 	 *
 	 * @param initData The authentication header from the Telegram WebApp (client).
-	 * @return The current order's details.
+	 * @return The recent order's details.
 	 */
 	@GetMapping("/client-current")
 	public OrderResponseDTO getClientCurrentOrder(@RequestHeader("X-Telegram-Init-Data") String initData) {
 		Long telegramId = authValidator.validate(initData);
 		Long clientId = clientService.findClientByTelegramId(telegramId).getId();
 
-		OrderEntity order = orderService.findCurrentOrderByClientId(clientId);
+		OrderEntity order = orderService.findMostRecentOrderByClientId(clientId);
 		return orderMapper.toResponseDto(order);
 	}
 
@@ -284,6 +284,5 @@ public class OrderController {
 		List<OrderEntity> orders = orderService.findOrdersByDriverId(driverId);
 		return orders.stream().map(orderMapper::toResponseDto).toList();
 	}
-	
-	
+
 }
