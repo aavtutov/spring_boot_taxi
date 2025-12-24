@@ -110,12 +110,12 @@ docker-compose up -d db
 	```bash
 	ngrok http 8080
 	```
-* Copy the HTTPS URL provided by ngrok (e.g., `https://a1b2-c3d4.ngrok-free.app`) and use as `web.app.url`.
-* Go to **[@BotFather](https://t.me/BotFather)**, select your bot (for local development consider creating a separate bot) and set the WebApp URL to this new ngrok address.
+* Copy the HTTPS URL provided by ngrok (e.g., `https://a1b2-c3d4.ngrok-free.app`) and use as `web.app.url` in your `application-local.properties`.
+* Go to **[@BotFather](https://t.me/BotFather)**, select your bot (for local development consider creating a separate bot) and set the WebApp URL to this ngrok HTTPS URL.
 
 > **Note:** ngrok URLs may change every time you restart the free version. For persistent testing, consider a static domain in the ngrok dashboard.
 
-Run Options:
+**Run Options**:
 
 * IDE: Set the active Spring profile to local (e.g., via VM options: `-Dspring.profiles.active=local`).
 * CLI:
