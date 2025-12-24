@@ -9,7 +9,7 @@ You can test the bot live here: [@hop_in_taxi_bot](https://t.me/hop_in_taxi_bot)
 
 ## 🚀 Quick Start (Docker)
 
-###1. Prerequisites
+### 1. Prerequisites
 
 Clone the repository and prepare the environment configuration:
 
@@ -19,11 +19,11 @@ Clone the repository and prepare the environment configuration:
     cp .env.example .env
 ```
 
-###2. Configure Environment Variables
+### 2. Configure Environment Variables
 
 Edit the `.env` file with your actual credentials (bot token, Mapbox keys, and database passwords).
 
-###3. Deployment
+### 3. Deployment
 
 Run the following command to build and start all services in detached mode:
 
