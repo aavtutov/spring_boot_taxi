@@ -82,7 +82,7 @@ After your server is up and running with SSL, you must link your WebApp to your 
 4.  Enter the URL of your WebApp (e.g., `https://your-domain.com/index.html`).
 
 
-## 🛠 System Architecture
+## 🐋 System Architecture
 
 The project runs within a private Docker network named `taxi-network`:
 
@@ -123,8 +123,6 @@ docker-compose up -d db
 	```bash
 	./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 	```
-
-> **Note on Mapbox:** To ensure the map displays correctly, make sure to provide a valid `MAPBOX_ACCESS_TOKEN` in your `src/main/resources/application-local.properties` or set it as an environment variable in your IDE.
 
 
 ## 📂 Project Structure
