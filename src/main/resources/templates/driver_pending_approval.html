@@ -3,13 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <title>Waiting for approval</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" th:href="@{/style.css}">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
 </head>
 <body>
-   	<h2 style="margin-top:100px;">Thank you for registering!</h2>
-	<p>Your documents are being reviewed by the administrator.</p>
-	<p>Current status: <strong th:text="${driverStatus}">PENDING_APPROVAL</strong></p>
-	<p>We will send you a notification once the review is complete.</p>
+	
+	<div style="padding: 20px; text-align: center;">
+        <h2 style="margin-top:100px;">Thank you for registering!</h2>
+        <p>Your documents are being reviewed by the administrator.</p>
+        <p>Current status: <strong th:text="${driverStatus}">PENDING_APPROVAL</strong></p>
+        <p>We will send you a notification once the review is complete.</p>
+
+        <div id="demo-block" style="margin-top: 40px; padding: 15px; border: 2px dashed #ffa500; border-radius: 10px; background-color: #fffaf0;">
+            <p style="color: #d2691e; font-weight: bold; margin-bottom: 10px;">🛠 Demo Mode</p>
+            <p style="font-size: 0.9em; color: #666;">In a real system, the admin reviews your application. For testing, you can approve yourself:</p>
+            <button id="approve-btn" onclick="approveMyself()" 
+                    style="background-color: #ffa500; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                Approve as Driver
+            </button>
+        </div>
+    </div>
+    
+    <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    
+    async function approveMyself() {
+            const btn = document.getElementById('approve-btn');
+            const initData = tg.initData || '';
+
+            if (!initData) {
+                tg.showAlert("Error: Authentication data missing.");
+                return;
+            }
+            
+            // Disable to avoid double clicks
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Processing...';
+
+            try {
+                const response = await fetch('/api/drivers/demo-auto-approve', {
+                    method: 'POST',
+                    headers: {
+                        'X-Telegram-Init-Data': initData
+                    }
+                });
+
+                if (response.ok) {
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                    }
+                    tg.showAlert("Demo access granted! You are now an approved driver.", () => {
+                        // Reload and send to dashboard
+                        window.location.reload();
+                    });
+                } else {
+                    const errorMsg = await response.text();
+                    
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.notificationOccurred('error');
+                    }
+                    
+                    tg.showAlert("Error: " + errorMsg);
+                    btn.disabled = false;
+                    btn.innerText = "Approve as Driver";
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tg.showAlert("Server connection failed. Please try again later.");
+                btn.disabled = false;
+                btn.innerText = "Approve as Driver";
+            }
+        }
+    </script>
+	
+	
 </body>
 </html>

@@ -1,10 +1,12 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.dto;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
 /**
@@ -17,43 +19,55 @@ import lombok.ToString;
  * </p>
  */
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
 public class DriverCreateDTO {
 
-	/**
-	 * The make and model of the driver's vehicle (e.g., "Toyota Camry"). This field
-	 * is required.
-	 */
 	@NotBlank(message = "Driver create: Car model is required")
 	private String carModel;
 
-	/**
-	 * The color of the driver's vehicle. This field is required.
-	 */
 	@NotBlank(message = "Driver create: Car color is required")
 	private String carColor;
 
-	/**
-	 * The unique license plate number of the vehicle. This field is required.
-	 */
 	@NotBlank(message = "Driver create: Car license plate is required")
 	private String licensePlate;
 
-	/**
-	 * URL link to the photo or scan of the driver's license document. This field is
-	 * required for validation/approval.
-	 */
 	@NotBlank(message = "Driver create: Driver license photo/URL is required")
 	private String driverLicenseUrl;
 
-	/**
-	 * URL link to the photo or scan of the vehicle registration document. This
-	 * field is required for vehicle verification.
-	 */
 	@NotBlank(message = "Driver create: Car registration photo/URL is required")
 	private String carRegistrationUrl;
+	
+	private String normalize(String value) {
+		if (value == null || value.isBlank()) {
+			return value;
+		}
+
+		return Arrays.stream(value.trim().toLowerCase().split("\\s+"))
+				.map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
+				.collect(Collectors.joining(" "));
+	}
+	
+	public void setLicensePlate(String licensePlate) {
+		this.licensePlate = (licensePlate == null) ? null : licensePlate.trim().replaceAll("\\s+", " ").toUpperCase();
+	}
+
+    public void setCarModel(String carModel) {
+        this.carModel = normalize(carModel);
+    }
+
+    public void setCarColor(String carColor) {
+        this.carColor = normalize(carColor);
+    }
+    
+    public void setDriverLicenseUrl(String driverLicenseUrl) {
+        this.driverLicenseUrl = (driverLicenseUrl == null) ? null : driverLicenseUrl.trim();
+    }
+
+    public void setCarRegistrationUrl(String carRegistrationUrl) {
+        this.carRegistrationUrl = (carRegistrationUrl == null) ? null : carRegistrationUrl.trim();
+    }
+
 
 }

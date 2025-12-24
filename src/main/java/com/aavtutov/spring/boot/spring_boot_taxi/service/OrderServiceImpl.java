@@ -19,23 +19,16 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderCancellationSource;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderStatus;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.ActiveOrderAlreadyExistsException;
-import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.DriverNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.MapboxServiceException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.NoContentException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.OrderNotFoundException;
+import com.aavtutov.spring.boot.spring_boot_taxi.exception.ResourceNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.MapboxRoutingServiceImpl.Route;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.validator.OrderValidator;
 
-/**
- * Default implementation of the {@link OrderService} interface.
- *
- * <p>
- * This service manages the complete lifecycle of a taxi order, including
- * interaction with external routing and pricing services, and enforcing status
- * transitions.
- * </p>
- */
+import jakarta.transaction.Transactional;
+
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -47,17 +40,9 @@ public class OrderServiceImpl implements OrderService {
 	private final MapboxRoutingService mapboxRoutingService;
 	private final TelegramBotService telegramBotService;
 
-	/**
-	 * Defines the statuses considered 'active' for business rules (e.g.,
-	 * client/driver cannot place/accept a new order).
-	 */
 	private static final List<OrderStatus> ACTIVE_ORDER_STATUSES = List.of(OrderStatus.PENDING, OrderStatus.ACCEPTED,
 			OrderStatus.IN_PROGRESS);
 
-	/**
-	 * Constructs the service, injecting all required repositories and external
-	 * service dependencies.
-	 */
 	public OrderServiceImpl(OrderRepository orderRepository, DriverRepository driverRepository,
 			ClientRepository clientRepository, OrderValidator orderValidator, FareCalculator fareCalculator,
 			MapboxRoutingService mapboxRoutingService, TelegramBotService telegramBotService) {
@@ -72,47 +57,29 @@ public class OrderServiceImpl implements OrderService {
 
 	// --- Private Helper Methods ---
 
-	/**
-	 * Retrieves an order by ID or throws an {@link OrderNotFoundException}.
-	 */
 	private OrderEntity findOrderByIdOrThrow(Long orderId) {
 		return orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("Order with id=" + orderId + " not found"));
 	}
 
-	/**
-	 * Retrieves a driver by ID or throws a {@link DriverNotFoundException}.
-	 */
 	private DriverEntity findDriverByIdOrThrow(Long driverId) {
 		return driverRepository.findById(driverId)
 				.orElseThrow(() -> new DriverNotFoundException("Driver with id=" + driverId + " not found"));
 	}
 
-	/**
-	 * Retrieves a client by ID or throws a {@link ClientNotFoundException}.
-	 */
-	private ClientEntity findClientByIdOrThrow(Long clientId) {
-		return clientRepository.findById(clientId)
-				.orElseThrow(() -> new ClientNotFoundException("Client with id=" + clientId + " not found"));
-	}
+//	private ClientEntity findClientByIdOrThrow(Long clientId) {
+//		return clientRepository.findById(clientId)
+//				.orElseThrow(() -> new ClientNotFoundException("Client with id=" + clientId + " not found"));
+//	}
 
 	// --- Core Business Logic Methods ---
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Validates if the client can place a new order, calculates the
-	 *             route metrics using Mapbox, and persists the order with estimated
-	 *             distance/duration.
-	 *             </p>
-	 *
-	 * @throws ActiveOrderAlreadyExistsException if the client already has an active
-	 *                                           order.
-	 * @throws MapboxServiceException            if route calculation fails.
-	 */
+	@Transactional
 	@Override
 	public OrderEntity placeOrder(OrderEntity order, Long clientId) {
-		ClientEntity client = findClientByIdOrThrow(clientId);
+		
+		ClientEntity client = clientRepository.findByIdWithLock(clientId)
+	            .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
 
 		// Business Rule: A client can only have one active order (PENDING, ACCEPTED,
 		// IN_PROGRESS).
@@ -141,33 +108,15 @@ public class OrderServiceImpl implements OrderService {
 		return orderRepository.save(order);
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Currently returns all drivers with {@link DriverStatus#ACTIVE}.
-	 *             This method is a placeholder for future implementation of
-	 *             proximity filtering.
-	 *             </p>
-	 */
 	@Override
 	public List<DriverEntity> findSuitableDrivers(Long orderId) {
-		// Rationale: Check existence before proceeding.
 		findOrderByIdOrThrow(orderId);
 
 		// TODO: Implement advanced filtering (proximity, vehicle type, etc.).
 		return driverRepository.findByStatus(DriverStatus.ACTIVE);
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Assigns a driver to a PENDING order, validates driver
-	 *             availability, and sends a notification to the assigned driver.
-	 *             </p>
-	 *
-	 * @throws ActiveOrderAlreadyExistsException if the driver already has an active
-	 *                                           order.
-	 */
+	@Transactional
 	@Override
 	public OrderEntity acceptOrder(Long orderId, Long driverId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
@@ -193,17 +142,10 @@ public class OrderServiceImpl implements OrderService {
 			String message = "🚕 Your driver is already on the way!";
 			telegramBotService.sendMessage(clientChatId, message);
 		}
-
 		return savedOrder;
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Marks the order status transition from ACCEPTED to IN_PROGRESS
-	 *             and logs the start time.
-	 *             </p>
-	 */
+	@Transactional
 	@Override
 	public OrderEntity startTrip(Long orderId, Long driverId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
@@ -216,14 +158,7 @@ public class OrderServiceImpl implements OrderService {
 		return orderRepository.save(order);
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Marks the order status transition to COMPLETED, calculates the
-	 *             actual trip duration, calculates the final fare, and saves the
-	 *             final price details.
-	 *             </p>
-	 */
+	@Transactional
 	@Override
 	public OrderEntity completeOrder(Long orderId, Long driverId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
@@ -252,20 +187,20 @@ public class OrderServiceImpl implements OrderService {
 		// Rationale: Notify the client about the completion and final price.
 		if (order.getDriver().getTelegramChatId() != null) {
 			String clientChatId = order.getClient().getTelegramChatId();
-			String message = "🏁 Your ride was completed!" + "\nTotal Price: " + savedOrder.getTotalPrice();
+			String message = String.format("🏁 Your ride was completed!"
+					+ "\n\n-From: %s"
+					+ "\n-To: %s"
+					+ "\n\nTotal Price: %.2f",
+					savedOrder.getStartAddress(),
+					savedOrder.getEndAddress(),
+					savedOrder.getTotalPrice()
+			);
 			telegramBotService.sendMessage(clientChatId, message);
 		}
-
 		return savedOrder;
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Cancels the order, sets the status to CANCELED, and identifies
-	 *             the driver as the source.
-	 *             </p>
-	 */
+	@Transactional
 	@Override
 	public OrderEntity cancelOrderByDriver(Long orderId, Long driverId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
@@ -282,21 +217,17 @@ public class OrderServiceImpl implements OrderService {
 		// Rationale: Notify the client about the cancellation by the driver.
 		if (order.getDriver().getTelegramChatId() != null) {
 			String clientChatId = order.getClient().getTelegramChatId();
-			String message = " Your ride was cancelled by the driver";
+			String message = String.format("❌ Driver cancelled the order"
+					+ "\n\n-From: %s"
+					+ "\n-To: %s",
+					order.getStartAddress(),
+					order.getEndAddress());
 			telegramBotService.sendMessage(clientChatId, message);
 		}
-
 		return savedOrder;
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Cancels the order, sets the status to CANCELED, and identifies
-	 *             the client as the source. Notifies the assigned driver (if any)
-	 *             of the cancellation.
-	 *             </p>
-	 */
+	@Transactional
 	@Override
 	public OrderEntity cancelOrderByClient(Long orderId, Long clientId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
@@ -314,72 +245,45 @@ public class OrderServiceImpl implements OrderService {
 		// client cancellation.
 		if (order.getDriver() != null && order.getDriver().getTelegramChatId() != null) {
 			String driverChatId = order.getDriver().getTelegramChatId();
-			String message = String.format("Customer cancelled the order #%d\nОт: %s\nДо: %s", order.getId(),
-					order.getStartAddress(), order.getEndAddress());
-
+			String message = String.format("❌ Customer cancelled the order"
+					+ "\n\n-From: %s"
+					+ "\n-To: %s",
+					order.getStartAddress(),
+					order.getEndAddress());
 			telegramBotService.sendMessage(driverChatId, message);
 		}
-
 		return savedOrder;
 	}
 
 	// --- Query Methods ---
 
-	/**
-	 * @inheritDoc
-	 */
+	@Transactional
 	@Override
 	public OrderEntity findOrderById(Long orderId) {
 		return findOrderByIdOrThrow(orderId);
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Retrieves all orders currently in the {@link OrderStatus#PENDING}
-	 *             status.
-	 *             </p>
-	 */
+	@Transactional
 	@Override
 	public List<OrderEntity> findAvailableOrders() {
 		List<OrderEntity> pendingOrders = orderRepository.findAllByStatus(OrderStatus.PENDING);
 		return pendingOrders;
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Searches for the single order with status ACCEPTED or IN_PROGRESS
-	 *             assigned to the driver.
-	 *             </p>
-	 */
+	@Transactional
 	@Override
 	public Optional<OrderEntity> findActiveOrderByDriver(Long driverId) {
 		return orderRepository.findFirstByDriverIdAndStatusIn(driverId,
 				List.of(OrderStatus.ACCEPTED, OrderStatus.IN_PROGRESS));
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Retrieves the client's order history, sorted by creation date
-	 *             descending.
-	 *             </p>
-	 */
+	@Transactional
 	@Override
 	public List<OrderEntity> findOrdersByClientId(Long clientId) {
 		return orderRepository.findAllByClientIdOrderByCreatedAtDesc(clientId);
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Retrieves the client's most recently created order, regardless of
-	 *             status.
-	 *             </p>
-	 *
-	 * @throws NoContentException if the client has placed no orders at all.
-	 */
+	@Transactional
 	@Override
 	public OrderEntity findMostRecentOrderByClientId(Long clientId) {
 		// Rationale: This retrieves the single most recently created order (TOP 1 by
@@ -388,13 +292,7 @@ public class OrderServiceImpl implements OrderService {
 				.orElseThrow(() -> new NoContentException("Client has no any orders"));
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Retrieves the driver's order history, sorted by creation date
-	 *             descending.
-	 *             </p>
-	 */
+	@Transactional
 	@Override
 	public List<OrderEntity> findOrdersByDriverId(Long driverId) {
 		return orderRepository.findAllByDriverIdOrderByCreatedAtDesc(driverId);

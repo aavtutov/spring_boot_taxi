@@ -5,7 +5,7 @@
     <title>Ride History | Hop-in taxi app</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" th:href="@{/style.css}"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 </head>
 <body>
 
@@ -18,11 +18,12 @@
 </div>
 
 <script>
-    const initData = Telegram.WebApp?.initData || Telegram.WebApp?.initDataUnsafe || '';
+    const tg = window.Telegram.WebApp;
+    const initData = tg.initData || new URLSearchParams(window.location.search).get('initData') || '';
     const ordersList = document.getElementById('available-orders-list');
 
     if (!initData) {
-        alert('Error: Unable to retrieve Telegram data.');
+        console.error('Telegram initData is missing');
     }
 
     function formatDate(datetime) {
@@ -36,30 +37,31 @@
         return new Date(datetime).toLocaleString('en-US', options);
     }
 
-    async function loadAvailableOrders() {
+    async function loadClientHistory() {
         try {
             const response = await fetch('/api/orders/client-history', {
                 method: 'GET',
-                headers: {
-                    'X-Telegram-Init-Data': initData
-                }
+                headers: { 'X-Telegram-Init-Data': initData }
             });
 
-            if (!response.ok) throw new Error('Failed to load ride history.');
+            if (!response.ok) throw new Error('Failed to load history');
 
             const orders = await response.json();
             renderOrders(orders);
         } catch (err) {
             console.error('Error loading ride history:', err);
-            ordersList.innerHTML = '<div class="error">Failed to load ride history.</div>';
+            if (ordersList) {
+                ordersList.innerHTML = '<div class="error">Failed to load ride history. Please try again.</div>';
+            }
         }
     }
 
     function renderOrders(orders) {
+        if (!ordersList) return;
         ordersList.innerHTML = '';
 
         if (orders.length === 0) {
-            ordersList.innerHTML = '<div class="empty">No rides yet.</div>';
+            ordersList.innerHTML = '<div class="empty">No rides found. Start your first journey!</div>';
             return;
         }
 
@@ -67,67 +69,62 @@
             const card = document.createElement('div');
             card.className = 'order-card';
 
-            const dateFormatted = formatDate(order.createdAt || order.date || Date.now());
-            const priceTotal = order.price + (order.bonusFare || 0);
+            const dateFormatted = formatDate(order.createdAt || order.date);
+            const status = (order.status || 'PENDING').toUpperCase();
+            
+         	// Calculate total including tip
+            const priceTotal = (order.price || 0) + (order.bonusFare || 0);
 
-            // Определяем статус и приводим его к верхнему регистру для надежности
-            const status = (order.status || '').toUpperCase();
-
-            // --- Блок цены / статуса ---
+         	// --- Price and Status Logic ---
             let priceStatusBlock = '';
-
-            if (status === 'COMPLETED') {
-                // 1. Для COMPLETED: показываем полную цену
+            if (status === 'COMPLETED' || status === 'FINISHED') {
+                const tipText = order.bonusFare > 0 
+                    ? `<span class="bonus">(incl. tip ${order.bonusFare.toFixed(2)} )</span>` 
+                    : '';
+                
                 priceStatusBlock = `
-                <div class="order-price">
-                    <strong>Total:</strong> ${priceTotal}
-                    ${order.bonusFare ? `<span class="bonus">(includes your tip: ${order.bonusFare})</span>` : ''}
-                </div>
-            `;
-            } else if (status === 'CANCELED') {
-                priceStatusBlock = `
-                <div class="order-price no-price">
-                    Trip cancelled
-                </div>
-            `;
+                    <div class="order-price">
+                        <strong>Total:</strong> ${priceTotal.toFixed(2)} ${tipText}
+                    </div>`;
+            } else if (status === 'CANCELED' || status === 'CANCELLED') {
+                priceStatusBlock = `<div class="order-price no-price">Trip cancelled</div>`;
             } else {
-                priceStatusBlock = `
-                <div class="order-price no-price">
-                    In progress...
-                </div>
-            `;
+                priceStatusBlock = `<div class="order-price no-price">In progress...</div>`;
             }
 
-            card.innerHTML = `
-            <div class="order-header">
-                <span class="order-date">${dateFormatted}</span>
-                <span class="order-status">${order.status || 'N/A'}</span>
-            </div>
-            ${order.driver ? `<div class="order-car">
-                    ${order.driver.carModel} ${order.driver.carColor} • ${order.driver.licensePlate}
-                    </div>` : ''}
-            <hr>
-            <div class="order-address"><strong>⏤</strong> ${order.startAddress}</div>
-            <div class="order-address"><strong>⏤</strong> ${order.endAddress}</div>
-            ${order.notes ? `<div class="order-notes">📌 ${order.notes}</div>` : ''}
+         	// --- Driver Information (if assigned) ---
+            const driverInfo = order.driver ? `
+                <div class="order-car" style="font-size: 0.9em; color: #777; margin-bottom: 8px;">
+                    ${order.driver.carColor} ${order.driver.carModel} • <strong>${order.driver.licensePlate}</strong>
+                </div>` : '';
 
-            ${priceStatusBlock} `;
+            card.innerHTML = `
+                <div class="order-header">
+                    <span class="order-date">${dateFormatted}</span>
+                    <span class="order-status status-${status.toLowerCase()}">${status}</span>
+                </div>
+                ${driverInfo}
+                <hr>
+                <div class="order-address"><strong>From:</strong> ${order.startAddress}</div>
+                <div class="order-address"><strong>To:</strong> ${order.endAddress}</div>
+                ${order.notes ? `<div class="order-notes">📌 ${order.notes}</div>` : ''}
+                ${priceStatusBlock}
+            `;
 
             ordersList.appendChild(card);
         });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        Telegram.WebApp.ready();
-
-        // Show the Telegram "Back" button
-        Telegram.WebApp.BackButton.show();
-        // Handle back button click
-        Telegram.WebApp.BackButton.onClick(() => {
+        tg.ready();
+        
+     	// Standard Telegram Back Button behavior
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => {
             window.location.href = `/index.html?initData=${encodeURIComponent(initData)}`;
         });
 
-        loadAvailableOrders();
+        loadClientHistory();
     });
 </script>
 

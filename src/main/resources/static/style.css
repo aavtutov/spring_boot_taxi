@@ -1,8 +1,15 @@
 
+:root {
+/* Переменная для удобства, используем отступ Телеграма + 10px запаса */
+	--safe-top: calc(env(safe-area-inset-top, 0px) + 10px);
+}
+
 body {
     margin: 0;
+    padding: 0;
     font-family: Arial, sans-serif;
     background-color: #ffffff;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 
 .header {
@@ -10,9 +17,12 @@ body {
     top: 0;
     background-color: #ffffff;
     z-index: 1000;
-    padding: 65px 20px 15px;
+    padding: 30px 20px 15px;
+    padding-top: var(--safe-top);
+    padding-bottom: 15px;
     display: block;
-    box-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px 0;
+    border-bottom:1px solid #eee;
+    /* box-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px 0; */
 }
 
 .header h1 {
@@ -28,8 +38,15 @@ body {
 }
 
 .order-status {
+	font-size: 0.8em;
     font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
 }
+
+.status-completed { color: #2ecc71; }
+.status-canceled { color: #e74c3c; }
+.status-accepted, .status-in_progress { color: #3498db; }
 
 .order-card {
     background-color: #ffffff;

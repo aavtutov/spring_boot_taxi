@@ -1,6 +1,6 @@
-mapboxgl.accessToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWdmOTB3MmswNWpoMmlzYzBpYW5sY3QwIn0.SmxMkvM66aGaoCJs45YX3g';
+mapboxgl.accessToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWpocDFpdmsxOW91M2NzNmZuc2kza3BjIn0.QJgCGsTJFtZGcJyxgQlDyA';
 
-const API_BASE_URL = "https://alpha-multispinous-outbully.ngrok-free.dev";
+const API_BASE_URL = "";
 let initData = '';
 let map, currentField = null;
 let estimated = 50, bonusFromUser = 0;
@@ -15,6 +15,22 @@ let endMarker = null;
 // Переменные для хранения предварительных данных Mapbox (до отправки на сервер)
 let aproximateDistance = null; // km
 let aproximateDuration = null;  // min
+
+// --- WebApp Initialization ---
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+if (tg.requestFullscreen) tg.requestFullscreen();
+
+// Элегантный наблюдатель за размером
+const resizeObserver = new ResizeObserver(() => {
+    if (map) map.resize();
+});
+
+resizeObserver.observe(document.body);
+
+// Customize the header colors to match the design
+tg.setHeaderColor('secondary_bg_color');
 
 document.addEventListener('DOMContentLoaded', () => {
 	initMap();
@@ -677,7 +693,7 @@ function startPollingOrderStatus(orderId) {
 							formInactive();
 							break;
 						case 'COMPLETED':
-							alert(`Your ride was completed! Total price: ${updatedOrder.totalPrice}`);
+							alert(`Your ride was completed!\nTotal price: ${updatedOrder.totalPrice}`);
 							formInactive();
 							break;
 						default:
@@ -729,7 +745,7 @@ async function drawRouteOnMap(start, end) {
 
 	endMarker = new mapboxgl.Marker(flagEl)
 		.setLngLat(end)
-		.setPopup(new mapboxgl.Popup().setText("Финиш"))
+		.setPopup(new mapboxgl.Popup().setText("Finish"))
 		.addTo(map);
 
 	try {

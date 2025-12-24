@@ -2,6 +2,7 @@ package com.aavtutov.spring.boot.spring_boot_taxi.controller;
 
 import java.util.List;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -18,21 +19,14 @@ import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverUpdateDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.DriverMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
+import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
 import com.aavtutov.spring.boot.spring_boot_taxi.security.TelegramWebAppAuthValidator;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.ClientService;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.DriverService;
 
 import jakarta.validation.Valid;
 
-/**
- * REST Controller for managing driver-related operations and their status
- * updates.
- *
- * <p>
- * Endpoints are secured using the {@code X-Telegram-Init-Data} header for
- * authentication of requests coming from the Driver's WebApp interface.
- * </p>
- */
+
 @RestController
 @RequestMapping("/api/drivers")
 public class DriverController {
@@ -42,10 +36,6 @@ public class DriverController {
 	private final DriverMapper driverMapper;
 	private final TelegramWebAppAuthValidator authValidator;
 
-	/**
-	 * Constructs the DriverController, injecting all necessary services and the
-	 * security validator.
-	 */
 	public DriverController(DriverService driverService, ClientService clientService, DriverMapper driverMapper,
 			TelegramWebAppAuthValidator authValidator) {
 		this.driverService = driverService;
@@ -54,21 +44,7 @@ public class DriverController {
 		this.authValidator = authValidator;
 	}
 
-	/**
-	 * Registers a new driver in the system.
-	 *
-	 * <p>
-	 * Requires a valid Telegram WebApp authentication header to verify the user
-	 * identity and retrieve existing client details for initialization.
-	 * </p>
-	 * <p>
-	 * Endpoint: POST /api/drivers
-	 * </p>
-	 *
-	 * @param driverDTO The request body containing new driver details.
-	 * @param initData  The authentication header from the Telegram WebApp.
-	 * @return The created driver's details as a response DTO.
-	 */
+	
 	@PostMapping
 	public DriverResponseDTO registerDriver(@RequestBody @Valid DriverCreateDTO driverDTO,
 			@RequestHeader("X-Telegram-Init-Data") String initData) {
@@ -92,20 +68,16 @@ public class DriverController {
 		DriverEntity registeredDriver = driverService.registerDriver(driver);
 		return driverMapper.toResponseDto(registeredDriver);
 	}
+	
+	@PostMapping("/demo-auto-approve")
+	@Profile("!prod")
+	public ResponseEntity<String> demoAutoApprove(@RequestHeader("X-Telegram-Init-Data") String initData) {
+	    Long telegramId = authValidator.validate(initData);
+	    DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
+	    driverService.adminUpdateDriverStatus(driver.getId(), DriverStatus.ACTIVE);
+	    return ResponseEntity.ok("Demo-mode: Driver status successfully changed to ACTIVE");
+	}
 
-	/**
-	 * Updates the driver's availability status and location (heartbeat).
-	 *
-	 * <p>
-	 * Used by the WebApp to signal that the driver is online and active.
-	 * </p>
-	 * <p>
-	 * Endpoint: POST /api/drivers/heartbeat
-	 * </p>
-	 *
-	 * @param initData The authentication header from the Telegram WebApp.
-	 * @return 200 OK with no content.
-	 */
 	@PostMapping("/heartbeat")
 	public ResponseEntity<Void> sendHeartbeat(@RequestHeader("X-Telegram-Init-Data") String initData) {
 		Long telegramId = authValidator.validate(initData);
@@ -113,16 +85,7 @@ public class DriverController {
 		return ResponseEntity.ok().build();
 	}
 
-	/**
-	 * Deactivates the driver, changing their status to offline/unavailable.
-	 *
-	 * <p>
-	 * Endpoint: POST /api/drivers/deactivate
-	 * </p>
-	 *
-	 * @param initData The authentication header from the Telegram WebApp.
-	 * @return 200 OK with no content.
-	 */
+	
 	@PostMapping("/deactivate")
 	public ResponseEntity<Void> deactivateDriver(@RequestHeader("X-Telegram-Init-Data") String initData) {
 		Long telegramId = authValidator.validate(initData);
@@ -130,22 +93,8 @@ public class DriverController {
 		return ResponseEntity.ok().build();
 	}
 
-	/**
-	 * Administrative endpoint to manually update a driver's status (e.g., block,
-	 * ban, manually activate).
-	 *
-	 * <p>
-	 * This endpoint is typically restricted to admin roles.
-	 * </p>
-	 * <p>
-	 * Endpoint: PATCH /api/drivers/{id}/admin/status
-	 * </p>
-	 *
-	 * @param driverId  The primary key ID of the driver to update.
-	 * @param statusDTO The request body containing the new status value.
-	 * @return 200 OK with a confirmation message.
-	 */
-	@PatchMapping("/{id}/admin/status")
+	
+	@PatchMapping("/admin/{id}/status")
 	public ResponseEntity<String> adminUpdateDriverStatus(@PathVariable("id") Long driverId,
 			@RequestBody @Valid DriverUpdateDTO statusDTO) {
 
@@ -155,48 +104,21 @@ public class DriverController {
 				.ok("Driver " + driverId + " administrative status changed to " + statusDTO.getStatus().name());
 	}
 
-	/**
-	 * Retrieves a list of all drivers currently marked as available for accepting
-	 * orders.
-	 *
-	 * <p>
-	 * Endpoint: GET /api/drivers
-	 * </p>
-	 *
-	 * @return A list of {@link DriverResponseDTO} for available drivers.
-	 */
+	
 	@GetMapping
 	public List<DriverResponseDTO> findAvailableDrivers() {
 		List<DriverEntity> availableDrivers = driverService.findAvailableDrivers();
 		return availableDrivers.stream().map(driverMapper::toResponseDto).toList();
 	}
 
-	/**
-	 * Retrieves driver details by their unique Telegram ID.
-	 *
-	 * <p>
-	 * Endpoint: GET /api/drivers/by-telegram-id/{id}
-	 * </p>
-	 *
-	 * @param telegramId The unique ID assigned by Telegram.
-	 * @return The driver's details as a response DTO.
-	 */
+	
 	@GetMapping("/by-telegram-id/{id}")
 	public DriverResponseDTO findDriverByTelegramId(@PathVariable("id") Long telegramId) {
 		DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
 		return driverMapper.toResponseDto(driver);
 	}
 
-	/**
-	 * Retrieves driver details by their unique primary key ID.
-	 *
-	 * <p>
-	 * Endpoint: GET /api/drivers/by-id/{id}
-	 * </p>
-	 *
-	 * @param driverId The primary key ID of the driver in the database.
-	 * @return The driver's details as a response DTO.
-	 */
+	
 	@GetMapping("/by-id/{id}")
 	public DriverResponseDTO findDriverById(@PathVariable("id") Long driverId) {
 		DriverEntity driver = driverService.findDriverById(driverId);

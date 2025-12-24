@@ -65,9 +65,17 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleOrderNotFoundException(OrderNotFoundException exception,
+	public ResponseEntity<IncorrectData> handleOrderNotFoundException(
+			OrderNotFoundException exception,
 			HttpServletRequest request) {
 		return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
+	}
+	
+	@ExceptionHandler
+	public ResponseEntity<IncorrectData> handleResourceNotFoundException(
+	        ResourceNotFoundException exception, 
+	        HttpServletRequest request) {
+	    return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
 	}
 
 	@ExceptionHandler

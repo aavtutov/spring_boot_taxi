@@ -5,13 +5,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer;
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot;
 
-/**
- * Primary Telegram Bot component for handling long polling updates.
- *
- * <p>This class integrates with the {@code telegrambots-spring-boot-starter}
- * by implementing {@link SpringLongPollingBot} and uses the injected
- * {@link UpdateConsumer} to process incoming updates.</p>
- */
+
 @Component
 public class TelegramBot implements SpringLongPollingBot {
 

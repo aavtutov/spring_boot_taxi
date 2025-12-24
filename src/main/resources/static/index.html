@@ -2,11 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Book a ride | Hop-in taxi app</title>
 
     <!-- Inline styles -->
     <style>
+    
+    	:root {
+            --tg-viewport-height: 100vh;
+            --tg-viewport-stable-height: 100vh;
+        }
 
         html, body {
             font-family: system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;;
@@ -19,6 +24,9 @@
             -moz-user-select: none;
             -ms-user-select: none;
             -webkit-text-size-adjust: 100%;
+            padding-top: calc(env(safe-area-inset-top, 0px) + 20px);
+            padding-left: env(safe-area-inset-left, 20px);
+            padding-right: env(safe-area-inset-right, 20px);
         }
 
         ::placeholder {
@@ -73,9 +81,15 @@
         }
 
         #map {
-            height: 100%;
-            width: 100%;
-            position: absolute;
+        	position: absolute;
+        	top: 0;
+        	left: 0;
+        	right:0;
+        	bottom: 0;
+        	width: 100%;
+            height: var(--tg-viewport-height, 100vh);
+            z-index: 1;
+            background-color: #f3f3f3;
         }
 
         .form-overlay {
@@ -92,6 +106,7 @@
             hsla(240, 100%, 50%, 0));
             background-color: white;
             backdrop-filter: blur(30px);
+            max-width: 500px;
         }
 
         .form-overlay.hidden {
@@ -259,7 +274,8 @@
             z-index: 10000;
             display: flex;
             flex-direction: column;
-            padding: 110px 20px 20px;
+            padding: 20px 20px 20px;
+            padding-top: calc(env(safe-area-inset-top, 0px) + 50px);
         }
 
         .modal.hidden {
@@ -406,12 +422,14 @@
         input.readonly {
             cursor: not-allowed;
             color: #95a0a6;
+            pointer-events: none;
+            user-select: none;
         }
 
         .user-menu {
             position: absolute;
             top: -70px;
-            right: 0;
+            left: 0;
             z-index: 3;
         }
 
@@ -425,14 +443,14 @@
         }
 
         .dropdown {
-            margin-top: 8px;
+            margin-top: 10px;
             background: white;
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 5px 0;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             position: absolute;
-            right: 0;
+            left: 0;
             width: 160px;
         }
 
@@ -553,7 +571,8 @@
 
 <body>
 
-<div id="map" style="position: absolute; top: 0; bottom: 0; width: 100%; z-index: 1;"></div>
+<!-- style="position: absolute; top: 0; bottom: 0; width: 100%; height: 100%; z-index: 1;"-->
+<div id="map"></div>
 
 <div id="marker-pin">
     <div class="pin-core"></div>
@@ -683,13 +702,17 @@
 
             <!-- Menu + Book + Cash -->
             <div id="form-menuBookPayment-block" style="display: none;">
+                <!-- Temporary disable
                 <div style="display: block;">
                     <button type="button" class="btn menu">Menu</button>
-                </div>
+                </div> -->
+                
                 <button type="submit" class="btn book">Book a ride</button>
+                
+                <!-- Temporary disable
                 <div style="display: block;">
                     <button type="button" class="btn payment-type">Cash</button>
-                </div>
+                </div> -->
             </div>
 
         </form>

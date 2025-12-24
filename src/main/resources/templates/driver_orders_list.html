@@ -6,7 +6,7 @@
     <title>Available Orders</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" th:href="@{/style.css}"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 </head>
 <body>
 
@@ -23,6 +23,7 @@
 </div>
 
 <script>
+	// Configuration
     const HEARTBEAT_INTERVAL = 30000;
     let heartbeatTimer = null;
 
@@ -30,9 +31,13 @@
     const ordersList = document.getElementById('available-orders-list');
 
     if (!initData) {
-        alert('Ошибка: Не удалось получить данные Telegram.');
+        alert('Telegram initData is missing');
     }
-
+    
+ 	// --- Driver Presence (Heartbeat) ---
+    /**
+     * Driver is online and looking at the orders list.
+     */
     async function sendHeartbeat() {
         try {
             await fetch('/api/drivers/heartbeat', {
@@ -68,7 +73,11 @@
         };
         return new Date(datetime).toLocaleString('en-EN', options);
     }
-
+    
+ 	// --- Order Management ---
+    /**
+     * Fetches all orders with status 'PENDING' from the server.
+     */
     async function loadAvailableOrders() {
         try {
             const response = await fetch('/api/orders', {
@@ -78,17 +87,18 @@
                 }
             });
 
-            if (!response.ok) throw new Error('Ошибка загрузки заказов');
+            if (!response.ok) throw new Error('Failed to load orders');
 
             const orders = await response.json();
             renderOrders(orders);
         } catch (err) {
             console.error('Load available orders error:', err);
-            ordersList.innerHTML = '<div class="error">Ошибка загрузки заказов</div>';
+            ordersList.innerHTML = '<div class="error">Error loading orders. Please try again.</div>';
         }
     }
 
     function renderOrders(orders) {
+    	if (!ordersList) return;
         ordersList.innerHTML = '';
 
         if (orders.length === 0) {
@@ -101,7 +111,6 @@
             card.className = 'order-card';
 
             const dateFormatted = formatDate(order.createdAt || order.date || Date.now());
-
             const priceTotal = order.price + (order.bonusFare || 0);
 
             card.innerHTML = `
@@ -114,9 +123,9 @@
             ${order.notes ? `<div class="order-notes">📌 ${order.notes}</div>` : ''}
             <div class="order-price">
                 <strong>Total:</strong> ${priceTotal} 
-                ${order.bonusFare ? `<span class="bonus">(includes client's tip: ${order.bonusFare})</span>` : ''}
+                ${order.bonusFare ? `<span class="bonus">(incl. tip: ${order.bonusFare})</span>` : ''}
             </div>
-            <button class="btn btn-blue" data-order-id="${order.id}">Принять</button>
+            <button class="btn btn-blue" data-order-id="${order.id}">Accept</button>
         `;
 
             card.querySelector('button').addEventListener('click', () => acceptOrder(order.id));
@@ -125,6 +134,10 @@
     }
 
     async function acceptOrder(orderId) {
+    	Telegram.WebApp.showConfirm('Are you sure you want to accept this order?', async (isConfirmed) => {
+        
+    	if (!isConfirmed) return;
+    	
         try {
             const response = await fetch(`/api/orders/${orderId}`, {
                 method: 'PATCH',
@@ -137,18 +150,23 @@
 
             if (!response.ok) {
                 const errorText = await response.text();
-                alert('Ошибка: ' + errorText);
+                Telegram.WebApp.showAlert('Could not accept order: ' + errorText);
                 return;
             }
-
-            const order = await response.json();
-            alert(`Вы приняли заказ #${order.id}`);
+            
+         	// Haptic feedback for successful interaction
+            if (Telegram.WebApp.HapticFeedback) {
+                Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            }
+			
             window.location.href = `/driver/active-order?initData=${encodeURIComponent(initData)}`;
         } catch (err) {
-            alert('Сеть: ошибка принятия заказа');
+        	Telegram.WebApp.showAlert('Network error. Check your connection.');
         }
+    });
     }
 
+ 	// --- Navigation ---
     function goToActives() {
         window.location.href = `/driver/active-order?initData=${encodeURIComponent(initData)}`;
     }
@@ -157,13 +175,13 @@
         window.location.href = `/driver/orders-history?initData=${encodeURIComponent(initData)}`;
     }
 
+ 	// --- Initialization ---
     document.addEventListener('DOMContentLoaded', () => {
-        Telegram.WebApp.ready();
+    	const tg = Telegram.WebApp;
+    	tg.ready();
 
-        // Показываем кнопку "Back"
-        Telegram.WebApp.BackButton.show();
-        // Назначаем поведение на кнопку
-        Telegram.WebApp.BackButton.onClick(() => {
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => {
             window.location.href = `/index.html?initData=${encodeURIComponent(initData)}`;
         });
 

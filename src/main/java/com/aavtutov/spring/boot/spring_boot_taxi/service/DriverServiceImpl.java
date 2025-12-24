@@ -106,25 +106,16 @@ public class DriverServiceImpl implements DriverService {
 		return driverRepository.save(driver);
 	}
 
-	/**
-	 * @inheritDoc
-	 */
 	@Override
 	public DriverEntity findDriverByTelegramId(Long telegramId) {
 		return findDriverByTelegramIdOrThrow(telegramId);
 	}
 
-	/**
-	 * @inheritDoc
-	 */
 	@Override
 	public DriverEntity findDriverById(Long driverId) {
 		return findDriverByIdOrThrow(driverId);
 	}
 
-	/**
-	 * @inheritDoc
-	 */
 	@Override
 	public List<DriverEntity> findAvailableDrivers() {
 		return driverRepository.findByStatus(DriverStatus.ACTIVE);
@@ -225,7 +216,6 @@ public class DriverServiceImpl implements DriverService {
 		// cancel any pending deactivation timer.
 		if (newStatus == DriverStatus.BANNED || newStatus == DriverStatus.PENDING_APPROVAL
 				|| newStatus == DriverStatus.INACTIVE) {
-
 			ScheduledFuture<?> future = scheduledDeactivations.remove(driver.getTelegramId());
 			if (future != null) {
 				future.cancel(false);
@@ -239,17 +229,17 @@ public class DriverServiceImpl implements DriverService {
 
 		// Notify the driver about the administrative status change.
 		switch (driver.getStatus()) {
-		case BANNED -> telegramBotService.sendMessage(chatId, "Your driver account has been banned");
+		case BANNED ->
+			telegramBotService.sendMessage(chatId, "Your driver account has been banned!");
+		case ACTIVE, INACTIVE ->
+			telegramBotService.sendMessage(chatId, "🎉 Your driver account is active now!");
 		case PENDING_APPROVAL ->
-			telegramBotService.sendMessage(chatId, "Your driver account status has been changed to PENDING");
+			telegramBotService.sendMessage(chatId, "Your driver account status has been changed to: PENDING");
 		default -> throw new IllegalStateException("Unexpected driver status");
 
 		}
 	}
 
-	/**
-	 * @inheritDoc
-	 */
 	@Override
 	public Optional<DriverEntity> findOptionalDriverByTelegramId(Long telegramId) {
 		return driverRepository.findByTelegramId(telegramId);

@@ -9,15 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-/**
- * Data Transfer Object (DTO) used to update the administrative status of an
- * existing driver.
- *
- * <p>
- * This DTO is typically used by an administrative endpoint or a dedicated
- * service to control a driver's operational state.
- * </p>
- */
 @Getter
 @Setter
 @NoArgsConstructor

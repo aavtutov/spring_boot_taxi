@@ -6,7 +6,7 @@ target/
 
 # properties with passwords and tokens
 src/main/resources/application-local.properties
-
+.env
 
 ### STS ###
 .apt_generated

@@ -23,8 +23,6 @@ public class WebClientConfig {
      */
 	@Bean
 	WebClient webClient(WebClient.Builder builder) {
-		
-		// No internal comments needed as the logic is trivial (simply building the client).
 		return builder.build();
 	}
 

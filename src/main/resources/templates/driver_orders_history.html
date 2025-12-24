@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Driver Orders History | Hop-in taxi app</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" th:href="@{/style.css}"/>
@@ -14,32 +14,17 @@
 </div>
 
 <div class="orders-container" id="driver-orders-list">
-    <div class="loading">Загрузка истории поездок...</div>
+    <div class="loading">Loading orders...</div>
 </div>
 
 <script>
-    // 1. Получение initData из параметра URL
-    function getInitDataFromUrl() {
-        const params = new URLSearchParams(window.location.search);
-        // Предполагаем, что initData передается как /driver-history.html?initData=...
-        return params.get('initData') || '';
-    }
-
-    let initData = getInitDataFromUrl();
+    const tg = window.Telegram.WebApp;
+    
+    let initData = tg.initData || new URLSearchParams(window.location.search).get('initData') || '';
     const ordersList = document.getElementById('driver-orders-list');
 
-    if (!initData) {
-        // Дополнительная проверка на случай, если Telegram WebApp все же доступен
-        const webAppInitData = Telegram.WebApp?.initData || Telegram.WebApp?.initDataUnsafe || '';
-        if (webAppInitData) {
-            console.warn('InitData not in URL, using Telegram WebApp data.');
-            initData = webAppInitData;
-        } else {
-            ordersList.innerHTML = '<div class="error">Ошибка: не удалось получить данные авторизации Telegram (initData).</div>';
-        }
-    }
-
     function formatDate(datetime) {
+        if (!datetime) return 'N/A';
         const options = {
             day: '2-digit',
             month: 'long',
@@ -47,43 +32,41 @@
             hour: '2-digit',
             minute: '2-digit'
         };
-        // Используем 'ru-RU' для русскоязычного отображения, если нужно.
-        // Или 'en-US', как в вашем примере.
         return new Date(datetime).toLocaleString('en-US', options);
     }
 
     async function loadDriverHistory() {
-        if (!initData) return; // Если данных нет, прерываем.
+        if (!initData) {
+            ordersList.innerHTML = '<div class="error">Error: Unauthorized access.</div>';
+            return;
+        }
 
         try {
-            // ИЗМЕНЕНА конечная точка API на /api/orders/driver-history
             const response = await fetch('/api/orders/driver-history', {
                 method: 'GET',
                 headers: {
-                    // Используем initData для авторизации водителя
                     'X-Telegram-Init-Data': initData
                 }
             });
 
             if (!response.ok) {
-                // Пытаемся прочитать ошибку с сервера
-                const errorText = await response.text();
-                throw new Error(`Failed to load driver history. Status: ${response.status}. Details: ${errorText}`);
+                throw new Error('Could not fetch history');
             }
 
             const orders = await response.json();
             renderOrders(orders);
         } catch (err) {
-            console.error('Error loading driver history:', err);
-            ordersList.innerHTML = `<div class="error">Не удалось загрузить историю поездок. ${err.message}</div>`;
+            console.error('History load error:', err);
+            ordersList.innerHTML = `<div class="error">Failed to load trip history.</div>`;
         }
     }
 
     function renderOrders(orders) {
+        if (!ordersList) return;
         ordersList.innerHTML = '';
 
         if (orders.length === 0) {
-            ordersList.innerHTML = '<div class="empty">No history yet.</div>';
+            ordersList.innerHTML = '<div class="empty">No trip history yet.</div>';
             return;
         }
 
@@ -91,78 +74,66 @@
             const card = document.createElement('div');
             card.className = 'order-card';
 
-            const dateFormatted = formatDate(order.finishedAt || order.createdAt || Date.now());
-
-            // Определяем статус
-            const status = (order.status || '').toUpperCase();
-            const isCanceled = status === 'CANCELED';
-            // Включаем FINISHED и COMPLETED как завершенные
+            const dateFormatted = formatDate(order.finishedAt || order.createdAt);
+            const status = (order.status || 'UNKNOWN').toUpperCase();
+            
             const isCompleted = status === 'COMPLETED' || status === 'FINISHED';
+            const isCanceled = status === 'CANCELED' || status === 'CANCELLED' || status === 'CANCEL_BY_DRIVER';
 
-            // --- Блок статистики (Продолжительность и Расстояние) ---
+            // --- Stats Block (Duration & Distance) ---
             let statsBlock = '';
             if (isCompleted) {
-                // ИСПОЛЬЗУЕМ camelCase (actualDuration)
-                const duration = order.actualDuration ? `${Math.round(order.actualDuration)} мин` : 'N/A';
-                // ИСПОЛЬЗУЕМ camelCase и опечатку (aproximateDistance)
-                const distance = order.aproximateDistance ? `${(order.aproximateDistance).toFixed(1)} км` : 'N/A';
-
+                const duration = order.actualDuration ? `${Math.round(order.actualDuration)} min` : 'N/A';
+                const distance = order.aproximateDistance ? `${order.aproximateDistance.toFixed(1)} km` : 'N/A';
                 statsBlock = `
-                <div class="order-stats">
-                    <span>${duration} (~${distance})</span>
-                </div>
-            `;
+                    <div class="order-stats">
+                        <span>⏱ ${duration} (${distance})</span>
+                    </div>
+                `;
             }
 
-
-            // --- Блок Цены ---
+         	// --- Price & Status Block ---
             let priceBlock;
             if (isCompleted) {
-                // Если завершен, показываем Total
-                priceBlock = `<div class="order-price"><strong>Total:</strong> ${order.totalPrice || 'N/A'}</div>`;
+                const total = order.totalPrice ? order.totalPrice.toFixed(2) : '0.00';
+                
+                const tip = (order.bonusFare && order.bonusFare > 0) 
+                    ? `<span class="bonus">(incl. tip: ${order.bonusFare.toFixed(2)})</span>` 
+                    : '';
+                
+                priceBlock = `<div class="order-price"><strong>Total:</strong> ${total} ${tip}</div>`;
             } else if (isCanceled) {
-                // Если отменен, показываем "Отменено"
-                priceBlock = `<div class="order-price no-price"> Trip cancelled </div>`;
+                priceBlock = `<div class="order-price no-price">Trip cancelled</div>`;
             } else {
-                // Если в процессе или ожидает, показываем тире
-                priceBlock = `<div class="order-price no-price"> In progress... </div>`;
+                priceBlock = `<div class="order-price no-price">Status: ${status}</div>`;
             }
 
-
             card.innerHTML = `
-            <div class="order-header">
-                <span class="order-date">${dateFormatted}</span>
-                <span class="order-status">${order.status || 'N/A'}</span>
-            </div>
-            <hr>
-
-            
-            <div class="order-address"><strong>⏤</strong> ${order.startAddress}</div>
-            <div class="order-address"><strong>⏤</strong> ${order.endAddress}</div>
-            ${order.notes ? `<div class="order-notes">📌 Заметки: ${order.notes}</div>` : ''}
-            ${statsBlock}
-            ${priceBlock}
-        `;
+                <div class="order-header">
+                    <span class="order-date">${dateFormatted}</span>
+                    <span class="order-status status-${status.toLowerCase()}">${status}</span>
+                </div>
+                <hr>
+                <div class="order-address"><strong>From:</strong> ${order.startAddress}</div>
+                <div class="order-address"><strong>To:</strong> ${order.endAddress}</div>
+                ${order.notes ? `<div class="order-notes">Client's notes: ${order.notes}</div>` : ''}
+                ${statsBlock}
+                ${priceBlock}
+            `;
 
             ordersList.appendChild(card);
         });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // 2. Инициализация Telegram WebApp
-        if (Telegram.WebApp) {
-            Telegram.WebApp.ready();
+        tg.ready();
 
-            // 3. Настройка кнопки "Назад"
-            Telegram.WebApp.BackButton.show();
-            Telegram.WebApp.BackButton.onClick(() => {
-                // Возврат на главную страницу, передавая initData обратно
-                window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-            });
-        }
+        // Configure Back Button
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => {
+            window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
+        });
 
-
-        // 4. Загрузка истории
         loadDriverHistory();
     });
 </script>
