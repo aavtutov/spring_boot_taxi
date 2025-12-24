@@ -23,6 +23,22 @@ Clone the repository and prepare the environment configuration:
 
 Edit the `.env` file with your actual credentials (bot token, Mapbox keys, and database passwords).
 
+#### Fare Strategies
+
+The application supports different fare calculation logic via the **Strategy Pattern**. You can switch strategies in your `.env` file.
+
+| Strategy | Description | Formula |
+| :--- | :--- | :--- |
+| `DISTANCE_ONLY` | Standard city fare based on distance | $Price = BASE + (Dist \times FARE/KM)$ |
+| `DISTANCE_AND_TIME` | Traffic-aware fare (distance + duration) | $Price = BASE + (Dist \times FARE/KM) + (Dur \times FARE/MIN)$ |
+
+**Configuration Parameters:**
+
+* **FARE_CALCULATION_STRATEGY**: Defines which bean to use (`DISTANCE_ONLY` or `DISTANCE_AND_TIME`).
+* **FARE_BASE**: Fixed starting price (landing fee).
+* **FARE_PER_KM**: Cost per each kilometer.
+* **FARE_PER_MINUTE**: Cost per each minute of the trip (used only in `DISTANCE_AND_TIME`).
+
 ### 3. Deployment
 
 Run the following command to build and start all services in detached mode:
@@ -89,12 +105,15 @@ docker-compose up -d db
 
 * Create and fill `src/main/resources/application-local.properties` use `application.properties` as template.
 * Ensure the database connection points to `localhost:5432` (e.g., `jdbc:postgresql://localhost:5432/postgres`).
-* Use **ngrok** to get WebApp url and create secure tunnel:
+* Use **ngrok** to get WebApp URL and create secure tunnel:
 
 	```bash
 	ngrok http 8080
 	```
-* Copy the HTTPS URL provided by ngrok (e.g., `https://a1b2-c3d4.ngrok-free.app`) and use as web.app.url.
+* Copy the HTTPS URL provided by ngrok (e.g., `https://a1b2-c3d4.ngrok-free.app`) and use as `web.app.url`.
+* Go to **[@BotFather](https://t.me/BotFather)**, select your bot (for local development consider creating a separate bot) and set the WebApp URL to this new ngrok address.
+
+> **Note:** ngrok URLs may change every time you restart the free version. For persistent testing, consider a static domain in the ngrok dashboard.
 
 Run Options:
 
