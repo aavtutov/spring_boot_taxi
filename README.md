@@ -34,10 +34,10 @@ The application supports different fare calculation logic via the **Strategy Pat
 
 **Configuration Parameters:**
 
-* **FARE_CALCULATION_STRATEGY**: Defines which bean to use (`DISTANCE_ONLY` or `DISTANCE_AND_TIME`).
-* **FARE_BASE**: Fixed starting price (landing fee).
-* **FARE_PER_KM**: Cost per each kilometer.
-* **FARE_PER_MINUTE**: Cost per each minute of the trip (used only in `DISTANCE_AND_TIME`).
+* `**FARE_CALCULATION_STRATEGY**`: Defines which bean to use (`DISTANCE_ONLY` or `DISTANCE_AND_TIME`).
+* `**FARE_BASE**`: Fixed starting price (landing fee).
+* `**FARE_PER_KM**`: Cost per each kilometer.
+* `**FARE_PER_MINUTE**`: Cost per each minute of the trip (used only in `DISTANCE_AND_TIME`).
 
 ### 3. Deployment
 
