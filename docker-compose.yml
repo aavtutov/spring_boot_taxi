@@ -37,23 +37,23 @@ services:
       db:
         condition: service_healthy
     environment:
-		# DB
+      # DB
       - DB_URL=${DB_URL}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
-	  - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-	  	# Admin
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # Admin
       - SPRING_SECURITY_USER_NAME=${ADMIN_USERNAME}
       - SPRING_SECURITY_USER_PASSWORD=${ADMIN_PASSWORD}
       - SPRING_SECURITY_USER_ROLES=ADMIN
-	  	# Telegram
+      # Telegram
       - TG_USERNAME_BOT=${TG_USERNAME_BOT}
       - TG_BOT_TOKEN=${TG_BOT_TOKEN}
       - WEB_APP_URL=${WEB_APP_URL}
-		# MapBox
+      # MapBox
       - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}
-	  	# Tarrifs
-	  - FARE_BASE=${FARE_BASE}
+      # Tariffs
+      - FARE_BASE=${FARE_BASE}
       - FARE_PER_KM=${FARE_PER_KM}
       - FARE_PER_MINUTE=${FARE_PER_MINUTE}
 
