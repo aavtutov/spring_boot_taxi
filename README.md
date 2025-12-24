@@ -52,7 +52,7 @@ Once the containers are running, follow these steps to connect your domain:
 
 3.  **SSL Tab:**
 
-	* Select "Request a new SSL Certificate" and enable "Force SSL". (This is mandatory for Telegram Web App functionality.)
+	* Select "Request a new SSL Certificate" and enable "Force SSL". This is mandatory for Telegram Web App functionality.
 
 
 
@@ -87,9 +87,14 @@ docker-compose up -d db
 
 **Configuration**:
 
-* Open `src/main/resources/application-local.properties`.
-* Ensure the database connection points to `localhost:5432`.
-* Important: Fill in your `MAPBOX_ACCESS_TOKEN` and Telegram credentials in the properties file to enable full functionality.
+* Create and fill `src/main/resources/application-local.properties` use `application.properties` as template.
+* Ensure the database connection points to `localhost:5432` (e.g., `jdbc:postgresql://localhost:5432/postgres`).
+* Use **ngrok** to get WebApp url and create secure tunnel:
+
+	```bash
+	ngrok http 8080
+	```
+* Copy the HTTPS URL provided by ngrok (e.g., `https://a1b2-c3d4.ngrok-free.app`) and use as web.app.url.
 
 Run Options:
 
@@ -100,7 +105,7 @@ Run Options:
 	./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 	```
 
-> **Note on Mapbox:** To ensure the map displays correctly during local development, make sure to provide a valid `MAPBOX_ACCESS_TOKEN` in your `src/main/resources/application-local.properties` or set it as an environment variable in your IDE.
+> **Note on Mapbox:** To ensure the map displays correctly, make sure to provide a valid `MAPBOX_ACCESS_TOKEN` in your `src/main/resources/application-local.properties` or set it as an environment variable in your IDE.
 
 
 ## 📂 Project Structure
