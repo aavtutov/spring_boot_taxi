@@ -19,7 +19,7 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
  * {@link FareProperties}.
  * </p>
  */
-@Component("distance_and_time")
+@Component("DISTANCE_AND_TIME")
 public class FareCalculatorDistanceAndTime implements FareCalculator {
 
 	private final FareProperties fareProperties;

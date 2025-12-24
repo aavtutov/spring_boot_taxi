@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     ports:
       - '80:80'
-      - '81:81'   # Admin UI (Default: admin@example.com / changeme)
+      - '81:81'
       - '443:443'
     volumes:
       - ./npm_data:/data

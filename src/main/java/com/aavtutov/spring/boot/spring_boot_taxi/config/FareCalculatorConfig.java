@@ -36,7 +36,6 @@ public class FareCalculatorConfig {
     FareCalculator fareCalculator(ApplicationContext context) {
     	// Rationale: Use the ApplicationContext to fetch the correct implementation 
         // by name (strategy) at runtime, implementing the Strategy pattern.
-        return context.getBean(strategy, FareCalculator.class);
+        return context.getBean(strategy.toUpperCase(), FareCalculator.class);
     }
-
 }

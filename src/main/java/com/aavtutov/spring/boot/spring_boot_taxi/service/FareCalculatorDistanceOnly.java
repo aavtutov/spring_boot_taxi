@@ -18,7 +18,7 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
  * and relies on pricing parameters defined in {@link FareProperties}.
  * </p>
  */
-@Component("distance_only")
+@Component("DISTANCE_ONLY")
 public class FareCalculatorDistanceOnly implements FareCalculator {
 
 	private final FareProperties fareProperties;
