@@ -31,14 +31,6 @@ Run the following command to build and start all services in detached mode:
 docker-compose up -d --build
 ```
 
-## 🤖 Telegram Bot Configuration
-
-After your server is up and running with SSL, you must link your WebApp to your bot:
-
-1.  Open **[@BotFather](https://t.me/BotFather)** in Telegram.
-2.  Select your bot using `/mybots`.
-3.  Go to **Bot Settings** -> **Menu Button** -> **Configure Menu Button**.
-4.  Enter the URL of your WebApp (e.g., `https://your-domain.com/index.html`).
 
 
 ## ⚙️ Nginx Proxy Manager Setup
@@ -61,6 +53,17 @@ Once the containers are running, follow these steps to connect your domain:
 3.  **SSL Tab:**
 
 	* Select "Request a new SSL Certificate" and enable "Force SSL". (This is mandatory for Telegram Web App functionality.)
+
+
+
+## 🤖 Telegram Bot Configuration
+
+After your server is up and running with SSL, you must link your WebApp to your bot:
+
+1.  Open **[@BotFather](https://t.me/BotFather)** in Telegram.
+2.  Select your bot using `/mybots`.
+3.  Go to **Bot Settings** -> **Menu Button** -> **Configure Menu Button**.
+4.  Enter the URL of your WebApp (e.g., `https://your-domain.com/index.html`).
 
 
 ## 🛠 System Architecture
