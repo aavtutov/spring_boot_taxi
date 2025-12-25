@@ -1,6 +1,5 @@
 mapboxgl.accessToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWpocDFpdmsxOW91M2NzNmZuc2kza3BjIn0.QJgCGsTJFtZGcJyxgQlDyA';
 
-const API_BASE_URL = "";
 let initData = '';
 let map, currentField = null;
 let estimated = 50, bonusFromUser = 0;
@@ -274,7 +273,7 @@ function initWebApp() {
 	WebApp.ready();
 	initData = WebApp.initData;
 
-	fetch(`${API_BASE_URL}/api/orders/client-current`, {
+	fetch(`/api/orders/client-current`, {
 		method: 'GET',
 		headers: { 'X-Telegram-Init-Data': initData }
 	})
@@ -358,7 +357,7 @@ async function handleOrderSubmission(e) {
 	}
 
 	try {
-		const response = await fetch(`${API_BASE_URL}/api/orders`, {
+		const response = await fetch(`/api/orders`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -486,7 +485,7 @@ function handleActiveOrder(order) {
 		removePulseFromMarker();
 
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/orders/${order.id}`, {
+			const response = await fetch(`/api/orders/${order.id}`, {
 				method: 'PATCH',
 				headers: {
 					'Content-Type': 'application/json',
@@ -663,7 +662,7 @@ function startPollingOrderStatus(orderId) {
 
 	orderStatusPollInterval = setInterval(async () => {
 		try {
-			const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
+			const response = await fetch(`/api/orders/${orderId}`, {
 				method: 'GET',
 				headers: {
 					'X-Telegram-Init-Data': initData
@@ -723,74 +722,72 @@ function stopPollingOrderStatus() {
 async function drawRouteOnMap(start, end) {
 
 	// Clear previous markers
-	if (startMarker) {
-		startMarker.remove();
-		startMarker = null;
-	}
-	if (endMarker) {
-		endMarker.remove();
-		endMarker = null;
-	}
+	if (startMarker) startMarker.remove();
+	if (endMarker) endMarker.remove();
 
-	// Start
 	startMarker = new mapboxgl.Marker({ color: 'black' })
 		.setLngLat(start)
-		.setPopup(new mapboxgl.Popup().setText("Start"))
+		.setPopup(new mapboxgl.Popup().setText("Your trip starts here!"))
 		.addTo(map);
 
-	// Finish
 	const flagEl = document.createElement('div');
 	flagEl.textContent = '🏁';
 	flagEl.style.fontSize = '24px';
 
 	endMarker = new mapboxgl.Marker(flagEl)
 		.setLngLat(end)
-		.setPopup(new mapboxgl.Popup().setText("Finish"))
+		.setPopup(new mapboxgl.Popup().setText("This is your destination!"))
 		.addTo(map);
 
 	try {
-		const query = await fetch(
+		const response = await fetch(
 			`https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`
 		);
-		const data = await query.json();
+		const data = await response.json();
 		const route = data.routes[0].geometry;
 
-		// Очистка предыдущего маршрута
-		if (map.getSource('route')) {
-			map.removeLayer('route');
-			map.removeSource('route');
-		}
-
-		// Добавим маршрут
-		map.addSource('route', {
-			type: 'geojson',
-			data: {
+		const source = map.getSource('route');
+		if(source) {
+			source.setData({
 				type: 'Feature',
 				geometry: route
-			}
-		});
-
-		map.addLayer({
-			id: 'route',
-			type: 'line',
-			source: 'route',
-			layout: {
-				'line-join': 'round',
-				'line-cap': 'round'
-			},
-			paint: {
-				'line-color': '#000',
-				'line-width': 5
-			}
-		});
-
-		// Автофокус на маршрут
+			});
+		} else {
+			map.addSource('route', {
+				type: 'geojson',
+				data: {
+					type: 'Feature',
+					geometry: route
+				}
+			});
+			
+			map.addLayer({
+				id: 'route',
+				type: 'line',
+				source: 'route',
+				layout: { 'line-join': 'round', 'line-cap': 'round' },
+				paint: { 'line-color': '#000', 'line-width': 5 }
+			});
+		}
+		
+		// Autofocus on route
 		const bounds = new mapboxgl.LngLatBounds();
 		route.coordinates.forEach(coord => bounds.extend(coord));
-		map.fitBounds(bounds, { padding: 150 });
-
+		
+		const formHeight = document.querySelector('#orderForm')?.offsetHeight || 300;
+		
+		map.fitBounds(bounds, { 
+		    padding: {
+		        top: 150,
+		        bottom: formHeight + 50,
+		        left: 50,
+		        right: 50
+		    },
+		    duration: 2000
+		});
+		
 	} catch (err) {
-		console.error('Ошибка при построении маршрута:', err);
+		console.error('Route calculation error:', err);
 	}
 }
 
