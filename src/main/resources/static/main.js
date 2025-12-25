@@ -333,191 +333,177 @@ function showOrderForm() {
 
 }
 
-// *** Обновлена отправка заказа: добавляем aproximateDistance/Duration ***
 async function handleOrderSubmission(e) {
-	e.preventDefault();
+	tg.HapticFeedback.impactOccurred('medium');
+    e.preventDefault();
+	
+	const bookBtn = e.target.querySelector('.btn.book');
 	const statusMessage = document.getElementById('statusMessage');
     
-	const payload = {
-		startAddress: getValue('startAddress'),
-		endAddress: getValue('endAddress'),
-		startLatitude: parseFloat(getValue('startLatitude')),
-		startLongitude: parseFloat(getValue('startLongitude')),
-		endLatitude: parseFloat(getValue('endLatitude')),
-		endLongitude: parseFloat(getValue('endLongitude')),
-		price: getValue('price'), // Отправляем предварительную цену для верификации
-		bonusFare: getValue('bonusFare'),
-		notes: getValue('notes'),
-	};
+	// 1. Double protection: logical + physical
+	if (formLocked || (bookBtn && bookBtn.disabled)) return;
+	
+    const payload = {
+        startAddress: getValue('startAddress'),
+        endAddress: getValue('endAddress'),
+        startLatitude: parseFloat(getValue('startLatitude')),
+        startLongitude: parseFloat(getValue('startLongitude')),
+        endLatitude: parseFloat(getValue('endLatitude')),
+        endLongitude: parseFloat(getValue('endLongitude')),
+        price: getValue('price'), 
+        bonusFare: getValue('bonusFare'),
+        notes: getValue('notes'),
+    };
 
-	if (!payload.startAddress || !payload.endAddress || isNaN(payload.startLatitude) || isNaN(payload.endLatitude)) {
-		statusMessage.textContent = '⚠️ Please select both start and end points on the map.';
+    // Validation: Ensure points are selected
+    if (!payload.startAddress || !payload.endAddress || isNaN(payload.startLatitude) || isNaN(payload.endLatitude)) {
+        statusMessage.textContent = '⚠️ Please select both points on the map.';
+        statusMessage.style.color = 'red';
+        return;
+    }
+	
+	// 2. Instantly disable the button and show loading state
+	bookBtn.disabled = true;
+	bookBtn.style.opacity = '0.5';
+	const originalText = bookBtn.textContent;
+	bookBtn.textContent = 'Processing...';
+
+    try {
+        const response = await fetch(`/api/orders`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': initData
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            statusMessage.textContent = ''; // Clear errors on success
+            handleActiveOrder(result); // Switch UI to active order mode
+        } else {
+			// IMPORTANT: If server returned error, enable button back!
+			bookBtn.disabled = false;
+			bookBtn.style.opacity = '1';
+			bookBtn.textContent = originalText;
+			
+            statusMessage.textContent = `Error: ${result.message || 'Server error'}`;
+            statusMessage.style.color = 'red';
+        }
+    } catch (err) {
+		// IMPORTANT: If network failed, enable button back!
+		bookBtn.disabled = false;
+		bookBtn.style.opacity = '1';
+		bookBtn.textContent = originalText;
+		
+        console.error('Submission error:', err);
+        statusMessage.textContent = 'Network error. Please try again.';
 		statusMessage.style.color = 'red';
-		return;
-	}
-
-	try {
-		const response = await fetch(`/api/orders`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Telegram-Init-Data': initData
-			},
-			body: JSON.stringify(payload)
-		});
-
-		const result = await response.json();
-		if (response.ok) {
-			handleActiveOrder(result);
-		} else {
-			statusMessage.textContent = `Error API (${response.status}): ${result.message || JSON.stringify(result)}`;
-			statusMessage.style.color = 'red';
-		}
-	} catch (err) {
-		statusMessage.textContent = 'Network error. Check your API address.';
-		statusMessage.style.color = 'red';
-	}
+    }
 }
 
 function getValue(id) {
 	return document.getElementById(id).value;
 }
 
-// *** Обновлено отображение активного заказа: берем все данные из 'order' ***
 function handleActiveOrder(order) {
+    // 1. Hide the bonus/tips block to save space
+    const bonusBlock = document.getElementById('form-bonusFare-block');
+    if (bonusBlock) bonusBlock.style.display = 'none';
 
-	// Скрываем форму
-	const form = document.getElementById('orderForm');
-	if (form) form.style.display = 'block';
-
-	// Показываем контейнер с активным заказом
-	const container = document.getElementById('active-order-container');
-	container.style.display = 'block';
-
-	// Скрываем части формы
-	document.getElementById('form-bonusFare-block').style.display = 'none';
-	document.getElementById('form-menuBookPayment-block').style.display = 'none';
-	document.querySelector('#marker-pin .pin-core').style.display = 'none';
-
-	// Заполняем поля
-	document.getElementById('startAddress').value = order.startAddress || '';
-	document.getElementById('endAddress').value = order.endAddress || '';
-	document.getElementById('notes').value = order.notes || '';
-
-    // --- ПОДГОТОВКА ДАННЫХ ИЗ БД ---
-    // Цена и чаевые
-	bonusFromUser = parseFloat(order.bonusFare || 0);
-	estimated = parseFloat(order.price || 0);
-	document.getElementById('bonusFare').value = bonusFromUser;
-
-    // Длительность и дистанция
-    const duration = order.aproximateDuration; 
-    const displayDuration = duration ? `${Math.round(duration)} min` : 'N/A'; 
-    const distance = order.aproximateDistance;
-    const displayDistance = distance ? `${parseFloat(distance).toFixed(1)} km` : 'N/A';
+    // 2. Transform the "Book" button into a "Cancel" button
+    const mainButtonContainer = document.getElementById('form-menuBookPayment-block');
+    const bookBtn = mainButtonContainer?.querySelector('.btn.book');
     
-    // --- ОБНОВЛЕНИЕ БЛОКА СТОИМОСТИ ---
-	const total = estimated + bonusFromUser;
-	const priceTextEl = document.getElementById('estimatedPriceText');
-
-	priceTextEl.innerHTML = `
-	  <span class="price-label"><span class="price-icon">💵</span> Cash</span>
-	  <span class="price-amount">~${total.toFixed(2)}</span>
-      <!--<span class="route-info">(${displayDistance}, ${displayDuration})</span> -->
-	`;
-	priceTextEl.classList.add('active-price-format');
-
-	// Блокируем редактирование
-	['startAddress', 'endAddress', 'notes'].forEach(id => {
-		const el = document.getElementById(id);
-		if (el) {
-			el.setAttribute('readonly', true);
-			el.classList.add('readonly');
-		}
-	});
-
-	// Убираем возможность открывать модалки
-	currentField = null;
-
-	// --- ОБНОВЛЕНИЕ ТЕКСТА СТАТУСА ---
-	const statusText = document.getElementById('active-order-status-text');
-	const driverInfo = document.getElementById('driver-info');
-	const cancelBtn = document.getElementById('cancel-order-button');
+    if (bookBtn) {
+		bookBtn.disabled = false;
+		bookBtn.style.opacity = '1';
+        bookBtn.textContent = 'Cancel Trip';
+        bookBtn.classList.add('cancel-mode'); // Use this class for red styling in CSS
+        bookBtn.type = 'button'; // Prevent form submission
+        bookBtn.onclick = () => cancelOrder(order); // Assign cancellation logic
+    }
     
-	switch (order.status) {
-		case 'PENDING':
-			showPulseOnMarker();
-			statusText.textContent = `Looking for a driver...`;
-			driverInfo.innerHTML = ``;
-			break;
-		case 'ACCEPTED':
-			removePulseFromMarker();
-			statusText.textContent = `Arrival time ~10 min`;
-			if (order.driver) {
-				driverInfo.innerHTML = `
-	            ${order.driver.carModel} <span class="license-plate">${order.driver.licensePlate}</span> • ${order.driver.carColor}
-	          `;
-			}
-			break;
-		case 'IN_PROGRESS':
-			removePulseFromMarker();
-			statusText.textContent = `ETA ~${displayDuration} (${displayDistance})`;
-			if (order.driver) {
-				driverInfo.innerHTML = `
-          		${order.driver.carModel} <span class="license-plate">${order.driver.licensePlate}</span> • ${order.driver.carColor}
-			  `;
-			}
-			break;
-		default:
-			removePulseFromMarker();
-			statusText.textContent = `Status: ${order.status}`;
-			driverInfo.textContent = '';
-	}
+    if (mainButtonContainer) mainButtonContainer.style.display = 'flex';
 
-	// Кнопка отмены
-	document.getElementById('form-line-block-cancel-button').style.display = 'block';
-	cancelBtn.style.display = 'block';
-	cancelBtn.onclick = async () => {
-		const confirmed = confirm("Are you sure you want to cancel this order?");
+    // 3. Display the active order info container (status & driver)
+    const activeOrderContainer = document.getElementById('active-order-container');
+    if (activeOrderContainer) activeOrderContainer.style.display = 'block';
 
-		if (!confirmed) return;
+    // 4. Hide the interactive pin core on the map
+    const pinCore = document.querySelector('#marker-pin .pin-core');
+    if (pinCore) pinCore.style.display = 'none';
 
-		removePulseFromMarker();
+    // 5. Fill address and notes from the order data
+    document.getElementById('startAddress').value = order.startAddress || '';
+    document.getElementById('endAddress').value = order.endAddress || '';
+    document.getElementById('notes').value = order.notes || '';
 
-		try {
-			const response = await fetch(`/api/orders/${order.id}`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Telegram-Init-Data': initData
-				},
-				body: JSON.stringify({
-					action: 'CANCEL_BY_CLIENT'
-				})
-			});
+    // 6. Update Price Display with active order formatting
+    const total = parseFloat(order.price || 0) + parseFloat(order.bonusFare || 0);
+    const priceTextEl = document.getElementById('estimatedPriceText');
+    if (priceTextEl) {
+        priceTextEl.innerHTML = `
+            <span class="price-label"><span class="price-icon">💵</span> Cash</span>
+            <span class="price-amount">~${total.toFixed(2)}</span>
+        `;
+        priceTextEl.classList.add('active-price-format');
+    }
 
-			if (response.ok) {
-				alert("Order cancelled successfully.");
-				formInactive();
-			} else {
-				const error = await response.json();
-				alert("Failed to cancel order: " + (error.message || JSON.stringify(error)));
-			}
-		} catch (e) {
-			console.error("Cancel error:", e);
-			alert("Network error.");
-		}
-	};
+    // 7. Lock input fields to Read-Only
+    ['startAddress', 'endAddress', 'notes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.setAttribute('readonly', true);
+            el.classList.add('readonly');
+        }
+    });
 
-	lockFormInteractions();
+    // 8. Update Order Status and Driver Info
+    const statusText = document.getElementById('active-order-status-text');
+    const driverInfo = document.getElementById('driver-info');
+    
+    const displayDistance = order.aproximateDistance ? `${parseFloat(order.aproximateDistance).toFixed(1)} km` : 'N/A';
+    const displayDuration = order.aproximateDuration ? `${Math.round(order.aproximateDuration)} min` : 'N/A';
 
-	currentOrder = order;
-	startPollingOrderStatus(order.id);
+    switch (order.status) {
+        case 'PENDING':
+            showPulseOnMarker();
+            statusText.textContent = `Looking for a driver...`;
+            driverInfo.innerHTML = ``;
+            break;
+        case 'ACCEPTED':
+            removePulseFromMarker();
+            statusText.textContent = `Arrival time ~10 min`;
+            if (order.driver) {
+                driverInfo.innerHTML = `${order.driver.carModel} <span class="license-plate">${order.driver.licensePlate}</span> • ${order.driver.carColor}`;
+            }
+            break;
+        case 'IN_PROGRESS':
+            removePulseFromMarker();
+            statusText.textContent = `ETA ~${displayDuration} (${displayDistance})`;
+            if (order.driver) {
+                driverInfo.innerHTML = `${order.driver.carModel} <span class="license-plate">${order.driver.licensePlate}</span> • ${order.driver.carColor}`;
+            }
+            break;
+        default:
+            removePulseFromMarker();
+            statusText.textContent = `Status: ${order.status}`;
+            driverInfo.textContent = '';
+    }
 
-	drawRouteOnMap(
-		[order.startLongitude, order.startLatitude],
-		[order.endLongitude, order.endLatitude]
-	);
+    // 9. Global app state updates
+    lockFormInteractions();
+    currentOrder = order;
+    startPollingOrderStatus(order.id);
+
+    // 10. Draw the static route on the map
+    drawRouteOnMap(
+        [order.startLongitude, order.startLatitude],
+        [order.endLongitude, order.endLatitude]
+    );
 }
 
 function lockFormInteractions() {
@@ -554,60 +540,109 @@ function updateIconsOpacity(activeMode) {
 }
 
 function formInactive() {
+    formLocked = false;
+    setSelectionMode('start');
+	removePulseFromMarker();
 
-	formLocked = false;
-	setSelectionMode('start');
+    // 1. Reset the "Cancel" button back to "Book a ride"
+    const mainButtonContainer = document.getElementById('form-menuBookPayment-block');
+    const bookBtn = mainButtonContainer?.querySelector('.btn.book');
+    
+    if (bookBtn) {
+        bookBtn.textContent = 'Book a ride';
+        bookBtn.classList.remove('cancel-mode');
+        bookBtn.type = 'submit'; // Restore original form submission behavior
+        bookBtn.onclick = null;   // Remove the cancelOrder function link
+    }
 
-	// Скрыть активный заказ
-	document.getElementById('active-order-container').style.display = 'none';
-	document.getElementById('form-line-block-cancel-button').style.display = 'none';
+    // 2. Restore visibility of UI blocks
+    if (mainButtonContainer) mainButtonContainer.style.display = 'flex';
+    
+    const bonusBlock = document.getElementById('form-bonusFare-block');
+    if (bonusBlock) bonusBlock.style.display = 'flex';
+    
+    const pinCore = document.querySelector('#marker-pin .pin-core');
+    if (pinCore) pinCore.style.display = 'block';
 
-	// Показать блоки формы
-	document.getElementById('form-bonusFare-block').style.display = 'flex';
-	document.getElementById('form-menuBookPayment-block').style.display = 'flex';
-	document.querySelector('#marker-pin .pin-core').style.display = 'block';
+    // 3. Hide active order details
+    const activeOrderContainer = document.getElementById('active-order-container');
+    if (activeOrderContainer) activeOrderContainer.style.display = 'none';
 
-	// Сбросить форму
-	document.getElementById('orderForm').reset();
-	const priceTextEl = document.getElementById('estimatedPriceText');
-	priceTextEl.textContent = 'Estimated price: ~50.00';
-	priceTextEl.classList.remove('active-price-format');
-	bonusFromUser = 0;
-	estimated = 50;
+    // 4. Reset form fields and estimated price text
+    const form = document.getElementById('orderForm');
+    if (form) form.reset();
 
-	// Включить кнопки
-	['pin-button-start', 'pin-button-end', 'pin-button-notes'].forEach(id => {
-		const btn = document.getElementById(id);
-		if (btn) btn.disabled = false;
-	});
+    const priceTextEl = document.getElementById('estimatedPriceText');
+    if (priceTextEl) {
+        priceTextEl.textContent = 'Estimated price: ~50.00';
+        priceTextEl.classList.remove('active-price-format');
+    }
 
-	// Разблокировать поля
-	['startAddress', 'endAddress', 'notes'].forEach(id => {
-		const el = document.getElementById(id);
-		if (el) {
-			el.removeAttribute('readonly');
-			el.classList.remove('readonly');
-		}
-	});
+    // 5. Reset internal state variables
+    bonusFromUser = 0;
+    estimated = 50;
+    currentOrder = null;
 
-	stopPollingOrderStatus();
+    // 6. Unlock interaction with address/notes buttons
+    ['pin-button-start', 'pin-button-end', 'pin-button-notes'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = false;
+    });
 
-	// Clear route
-	if (map.getSource('route')) {
-		map.removeLayer('route');
-		map.removeSource('route');
-	}
+    // 7. Remove Read-Only attributes from inputs
+    ['startAddress', 'endAddress', 'notes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.removeAttribute('readonly');
+            el.classList.remove('readonly');
+        }
+    });
 
-	// Clear markers
-	if (startMarker) {
-		startMarker.remove();
-		startMarker = null;
-	}
-	if (endMarker) {
-		endMarker.remove();
-		endMarker = null;
-	}
+    // 8. Stop server polling
+    stopPollingOrderStatus();
 
+    // 9. Clean up map layers and markers
+    if (map.getSource('route')) {
+        map.removeLayer('route');
+        map.removeSource('route');
+    }
+
+    if (startMarker) {
+        startMarker.remove();
+        startMarker = null;
+    }
+    if (endMarker) {
+        endMarker.remove();
+        endMarker = null;
+    }
+}
+
+async function cancelOrder(order) {
+    const confirmed = confirm("Are you sure you want to cancel this order?");
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`/api/orders/${order.id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': initData
+            },
+            body: JSON.stringify({ action: 'CANCEL_BY_CLIENT' })
+        });
+
+        if (response.ok) {
+            // Successfully canceled, return UI to default state
+			removePulseFromMarker();
+            formInactive();
+        } else {
+            const error = await response.json();
+            console.error('Cancellation failed:', error);
+            alert("Failed to cancel: " + (error.message || "Unknown error"));
+        }
+    } catch (err) {
+        console.error("Network error during cancellation:", err);
+    }
 }
 
 
@@ -774,7 +809,7 @@ async function drawRouteOnMap(start, end) {
 		const bounds = new mapboxgl.LngLatBounds();
 		route.coordinates.forEach(coord => bounds.extend(coord));
 		
-		const formHeight = document.querySelector('#orderForm')?.offsetHeight || 300;
+		const formHeight = document.querySelector('#orderForm')?.offsetHeight || 400;
 		
 		map.fitBounds(bounds, { 
 		    padding: {
