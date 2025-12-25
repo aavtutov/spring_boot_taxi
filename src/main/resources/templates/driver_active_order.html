@@ -220,7 +220,17 @@
 
             const bounds = new mapboxgl.LngLatBounds();
             routeGeo.coordinates.forEach(coord => bounds.extend(coord));
-            map.fitBounds(bounds, {padding: 110});
+            map.fitBounds(bounds, { 
+    		    padding: {
+    		        top: 150,
+    		        bottom: 100,
+    		        left: 50,
+    		        right: 50
+    		    },
+    		    duration: 2000
+    		});
+            
+            
         });
         
         function toggleMenu() {
