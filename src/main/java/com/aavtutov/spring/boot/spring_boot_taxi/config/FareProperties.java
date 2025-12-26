@@ -17,4 +17,6 @@ public class FareProperties {
 	private double perKm;
 
 	private double perMin;
+	
+	private String currency;
 }

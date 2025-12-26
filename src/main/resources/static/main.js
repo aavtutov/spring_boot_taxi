@@ -1,7 +1,7 @@
 // --- Configuration & Global State ---
 mapboxgl.accessToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWpocDFpdmsxOW91M2NzNmZuc2kza3BjIn0.QJgCGsTJFtZGcJyxgQlDyA';
 
-let appConfig = { baseFare: 50, perKm: 20, perMin: 5 };
+let appConfig = { baseFare: 50, perKm: 20, perMin: 5, currency: '€' };
 let initData = '';
 let map, currentField = null;
 let estimated = appConfig.baseFare, bonusFromUser = 0;
@@ -107,7 +107,7 @@ async function updateEstimatedPriceIfPossible() {
 	if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
 		aproximateDistance = null;
 		aproximateDuration = null;
-        estimated = appConfig.baseFare;;
+        estimated = appConfig.baseFare;
 		updateEstimatedPriceText();
 		return;
 	}
@@ -151,7 +151,7 @@ function adjustBonus(amount) {
 function updateEstimatedPriceText() {
 	const total = estimated + bonusFromUser;
 	document.getElementById('estimatedPriceText').textContent =
-		`Estimated price: ~${estimated} (+${bonusFromUser} tip) = ~${total}.00`;
+		`Estimated price: ~${estimated} (+${bonusFromUser} tip) = ~${total} ${appConfig.currency}`;
 }
 
 // --- Modals (Notes & Address Search) ---
@@ -484,7 +484,7 @@ function handleActiveOrder(order) {
     if (priceTextEl) {
         priceTextEl.innerHTML = `
             <span class="price-label"><span class="price-icon">💵</span> Cash</span>
-            <span class="price-amount">~${total.toFixed(2)}</span>
+            <span class="price-amount">~${total.toFixed(2)} ${appConfig.currency}</span>
         `;
         priceTextEl.classList.add('active-price-format');
     }
@@ -599,7 +599,7 @@ function formInactive(shouldReset = true) {
 
         const priceTextEl = document.getElementById('estimatedPriceText');
         if (priceTextEl) {
-            priceTextEl.textContent = `Estimated price: ~${appConfig.baseFare}`;
+            priceTextEl.textContent = `Estimated price: ~${appConfig.baseFare} ${appConfig.currency}`;
             priceTextEl.classList.remove('active-price-format');
         }
 
@@ -865,7 +865,3 @@ document.addEventListener('visibilitychange', () => {
         startPollingOrderStatus(currentOrder.id);
     }
 });
-
-
-
-

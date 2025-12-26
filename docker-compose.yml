@@ -57,6 +57,7 @@ services:
       - FARE_BASE=${FARE_BASE}
       - FARE_PER_KM=${FARE_PER_KM}
       - FARE_PER_MINUTE=${FARE_PER_MINUTE}
+      - FARE_CURRENCY=${FARE_CURRENCY}
 
 networks:
   default:

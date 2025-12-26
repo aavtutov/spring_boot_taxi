@@ -22,12 +22,16 @@ public class AppConfigController {
 	@Value("${fare.perMin}")
     private double perMin;
 	
+	@Value("${fare.currency}")
+    private String currency;
+	
 	@GetMapping
 	public ResponseEntity<Map<String, Object>> getConfig() {
 		Map<String, Object> config = new HashMap<>();
 		config.put("baseFare", baseFare);
 		config.put("perKm", perKm);
 		config.put("perMin", perMin);
+		config.put("currency", currency);
 		return ResponseEntity.ok(config);
 	}
 
