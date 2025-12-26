@@ -69,7 +69,7 @@ public class DriverWebController {
 	public String getDriverDashboard(@RequestParam String initData, Model model) {
 
 		// 1. Validate the WebApp user identity and retrieve Telegram ID.
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 
 		// 2. Check if a driver profile exists for this Telegram user.
 		DriverEntity driver = driverService.findOptionalDriverByTelegramId(telegramId).orElse(null);
@@ -111,7 +111,7 @@ public class DriverWebController {
 	 */
 	@GetMapping("/driver/active-order")
 	public String getActiveOrdersPage(@RequestParam String initData, Model model) {
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 		DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
 
 		// Find if the driver is currently assigned and active in any order.

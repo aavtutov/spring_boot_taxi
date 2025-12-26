@@ -69,7 +69,7 @@ public class TelegramWebAppAuthValidator {
 	 * @throws SecurityException if the data is invalid, compromised, or crucial
 	 *                           fields are missing.
 	 */
-	public Long validate(String initData) throws SecurityException {
+	public TelegramUserDTO validate(String initData) throws SecurityException {
 
 		Map<String, String> dataMap;
 
@@ -114,7 +114,7 @@ public class TelegramWebAppAuthValidator {
 				if (telegramId == null) {
 					throw new SecurityException("Telegram ID not found in user data");
 				}
-				return telegramId;
+				return userDTO;
 
 			} catch (Exception e) {
 				throw new SecurityException("Failed to parse user data JSON", e);

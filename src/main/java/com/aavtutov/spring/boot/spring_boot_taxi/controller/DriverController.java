@@ -50,7 +50,7 @@ public class DriverController {
 			@RequestHeader("X-Telegram-Init-Data") String initData) {
 
 		// 1. Authenticate user identity via WebApp data
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 
 		// 2. Retrieve existing client information (assuming every driver is also a
 		// client)
@@ -72,7 +72,7 @@ public class DriverController {
 	@PostMapping("/demo-auto-approve")
 	@Profile("!prod")
 	public ResponseEntity<String> demoAutoApprove(@RequestHeader("X-Telegram-Init-Data") String initData) {
-	    Long telegramId = authValidator.validate(initData);
+	    Long telegramId = authValidator.validate(initData).getId();
 	    DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
 	    driverService.adminUpdateDriverStatus(driver.getId(), DriverStatus.ACTIVE);
 	    return ResponseEntity.ok("Demo-mode: Driver status successfully changed to ACTIVE");
@@ -80,7 +80,7 @@ public class DriverController {
 
 	@PostMapping("/heartbeat")
 	public ResponseEntity<Void> sendHeartbeat(@RequestHeader("X-Telegram-Init-Data") String initData) {
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 		driverService.activateDriverByHeartbeat(telegramId);
 		return ResponseEntity.ok().build();
 	}
@@ -88,7 +88,7 @@ public class DriverController {
 	
 	@PostMapping("/deactivate")
 	public ResponseEntity<Void> deactivateDriver(@RequestHeader("X-Telegram-Init-Data") String initData) {
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 		driverService.deactivateDriver(telegramId);
 		return ResponseEntity.ok().build();
 	}

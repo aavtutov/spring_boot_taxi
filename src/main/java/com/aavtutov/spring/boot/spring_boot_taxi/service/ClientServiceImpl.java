@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.ClientRepository;
+import com.aavtutov.spring.boot.spring_boot_taxi.dto.telegram.TelegramUserDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientAlreadyExistsException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientNotFoundException;
@@ -118,4 +119,17 @@ public class ClientServiceImpl implements ClientService {
 				.orElseThrow(() -> new ClientNotFoundException("Client with id=" + clientId + " not found"));
 	}
 
+	@Override
+	public ClientEntity getOrCreateClient(TelegramUserDTO tgUser) {
+		return clientRepository.findByTelegramId(tgUser.getId()).map(existingClient -> {
+			existingClient.setFullName(tgUser.getFirstName());
+			return clientRepository.save(existingClient);
+		}).orElseGet(() -> {
+			ClientEntity newClient = new ClientEntity();
+			newClient.setTelegramId(tgUser.getId());
+			newClient.setFullName(tgUser.getFirstName());
+			newClient.setTelegramChatId(String.valueOf(tgUser.getId()));
+			return clientRepository.save(newClient);
+		});
+	}
 }

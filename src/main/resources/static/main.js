@@ -281,7 +281,7 @@ async function initWebApp() {
 	        formOverlay.classList.add('fade-in', 'form-ready');
 	}
 
-	fetch(`/api/orders/client-current`, {
+	fetch(`/api/orders/current`, {
 		method: 'GET',
 		headers: { 'X-Telegram-Init-Data': initData }
 	})

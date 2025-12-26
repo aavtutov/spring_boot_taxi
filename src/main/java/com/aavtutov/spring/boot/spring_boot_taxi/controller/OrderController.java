@@ -17,6 +17,7 @@ import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderResponseDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderUpdateDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.DriverMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.OrderMapper;
+import com.aavtutov.spring.boot.spring_boot_taxi.dto.telegram.TelegramUserDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
@@ -55,7 +56,7 @@ public class OrderController {
 			@RequestHeader("X-Telegram-Init-Data") String initData) {
 
 		// Authenticate client and retrieve ClientEntity for ID.
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 		ClientEntity client = clientService.findClientByTelegramId(telegramId);
 
 		OrderEntity order = orderMapper.fromCreateDto(orderCreateDTO);
@@ -68,7 +69,7 @@ public class OrderController {
 	public OrderResponseDTO updateOrderStatus(@PathVariable("id") Long orderId,
 			@RequestBody @Valid OrderUpdateDTO updateDTO, @RequestHeader("X-Telegram-Init-Data") String initData) {
 
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 		OrderEntity updatedOrder = null;
 
 		// Rationale: Use a switch statement on the action type to cleanly separate
@@ -129,7 +130,7 @@ public class OrderController {
 
 	@GetMapping
 	public List<OrderResponseDTO> findAvailableOrders(@RequestHeader("X-Telegram-Init-Data") String initData) {
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 		driverService.findDriverByTelegramId(telegramId);
 
 		List<OrderEntity> availableOrders = orderService.findAvailableOrders();
@@ -138,24 +139,23 @@ public class OrderController {
 
 	@GetMapping("/client-history")
 	public List<OrderResponseDTO> getClientOrderHistory(@RequestHeader("X-Telegram-Init-Data") String initData) {
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 		Long clientId = clientService.findClientByTelegramId(telegramId).getId();
 		List<OrderEntity> orders = orderService.findOrdersByClientId(clientId);
 		return orders.stream().map(orderMapper::toResponseDto).toList();
 	}
 
-	@GetMapping("/client-current")
+	@GetMapping("/current")
 	public OrderResponseDTO getClientCurrentOrder(@RequestHeader("X-Telegram-Init-Data") String initData) {
-		Long telegramId = authValidator.validate(initData);
-		Long clientId = clientService.findClientByTelegramId(telegramId).getId();
-
-		OrderEntity order = orderService.findMostRecentOrderByClientId(clientId);
+		TelegramUserDTO tgUser = authValidator.validate(initData);
+		ClientEntity client = clientService.getOrCreateClient(tgUser);
+		OrderEntity order = orderService.findMostRecentOrderByClientId(client.getId());
 		return orderMapper.toResponseDto(order);
 	}
 
 	@GetMapping("/driver-history")
 	public List<OrderResponseDTO> getDriverOrderHistory(@RequestHeader("X-Telegram-Init-Data") String initData) {
-		Long telegramId = authValidator.validate(initData);
+		Long telegramId = authValidator.validate(initData).getId();
 		Long driverId = driverService.findDriverByTelegramId(telegramId).getId();
 		List<OrderEntity> orders = orderService.findOrdersByDriverId(driverId);
 		return orders.stream().map(orderMapper::toResponseDto).toList();
