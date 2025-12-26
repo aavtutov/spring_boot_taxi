@@ -1,9 +1,10 @@
 // --- Configuration & Global State ---
 mapboxgl.accessToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWpocDFpdmsxOW91M2NzNmZuc2kza3BjIn0.QJgCGsTJFtZGcJyxgQlDyA';
 
+let appConfig = { baseFare: 50, perKm: 20, perMin: 5 };
 let initData = '';
 let map, currentField = null;
-let estimated = 50, bonusFromUser = 0;
+let estimated = appConfig.baseFare, bonusFromUser = 0;
 let selectionMode = 'start';
 let formLocked = false;
 let orderStatusPollInterval = null;
@@ -106,7 +107,7 @@ async function updateEstimatedPriceIfPossible() {
 	if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
 		aproximateDistance = null;
 		aproximateDuration = null;
-        estimated = 50;
+        estimated = appConfig.baseFare;;
 		updateEstimatedPriceText();
 		return;
 	}
@@ -134,9 +135,9 @@ async function updateEstimatedPriceIfPossible() {
 }
 
 function estimatePrice(distanceKm, durationMin) {
-	const baseFare = 50;
-	const perKmRate = 20;
-	const perMinRate = 5;
+	const baseFare = appConfig.baseFare;
+	const perKmRate = appConfig.perKm;
+	const perMinRate = appConfig.perMin;
 	return Math.round(baseFare + (distanceKm * perKmRate) + (durationMin * perMinRate));
 }
 
@@ -249,13 +250,31 @@ function initAddressModal() {
 	}
 }
 
-// --- Telegram WebApp ---
-function initWebApp() {
-	if (!window.Telegram || !Telegram.WebApp) return;
 
+async function loadConfig() {
+    try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+            const data = await res.json();
+            appConfig = data;
+            estimated = appConfig.baseFare; 
+            updateEstimatedPriceText();
+            console.log("App config loaded from server:", appConfig);
+        }
+    } catch (err) {
+        console.error("Using default config due to error:", err);
+    }
+}
+
+// --- Telegram WebApp ---
+async function initWebApp() {
+	if (!window.Telegram || !Telegram.WebApp) return;
+	
 	const WebApp = Telegram.WebApp;
 	WebApp.ready();
 	initData = WebApp.initData;
+	
+	await loadConfig();
 
 	fetch(`/api/orders/client-current`, {
 		method: 'GET',
@@ -580,12 +599,12 @@ function formInactive(shouldReset = true) {
 
         const priceTextEl = document.getElementById('estimatedPriceText');
         if (priceTextEl) {
-            priceTextEl.textContent = 'Estimated price: ~50.00';
+            priceTextEl.textContent = `Estimated price: ~${appConfig.baseFare}`;
             priceTextEl.classList.remove('active-price-format');
         }
 
         bonusFromUser = 0;
-        estimated = 50;
+        estimated = appConfig.baseFare;
 		
 		if (lastKnownOrder) {
 			renderLastTripChip(lastKnownOrder);
