@@ -90,6 +90,73 @@
         .btn.book:active {
         	transform: scale(0.98);
         }
+        
+    .last-trip-chip {
+    display: flex;
+    align-items: center;
+    background: white;
+    color: #000;
+    
+    /* Совпадаем с аватаром */
+    height: 50px; 
+    border-radius: 25px; /* Половина высоты для идеального скругления */
+    padding: 0 18px;
+    
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    cursor: pointer;
+    border: 3px solid white; /* Такая же рамка, как у аватара */
+    
+    white-space: nowrap;
+    animation: fadeInIn 0.4s ease;
+    box-sizing: border-box; /* Чтобы border не увеличивал высоту */
+    transition: transform 0.1s ease;
+    margin: 0;
+    align-self: center;
+}
+
+.chip-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.1;
+    text-align: left;
+}
+
+.addr {
+    display: block;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    
+}
+
+.start-addr {
+    color: #8e8e93; /* Стандартный серый из палитры iOS/Telegram */
+    font-size: 10px;
+    font-weight: 400;
+    text-transform: uppercase; /* Сделает "FROM:" более аккуратным */
+    letter-spacing: 0.3px;
+}
+
+.end-addr {
+    color: #000;
+    font-size: 13px;
+    margin-top: 1px;
+}
+
+
+.last-trip-chip:active {
+    transform: scale(0.96);
+    background-color: #f9f9f9; /* Визуальный отклик на нажатие */
+}
+
+
+@keyframes fadeInIn {
+    from { opacity: 0; transform: translateX(-15px); }
+    to { opacity: 1; transform: translateX(0); }
+}
 
         #map {
         	position: absolute;
@@ -442,19 +509,24 @@
         }
 
         .user-menu {
+        	display: flex;
+        	align-items: center;
+        	gap: 10px;
             position: absolute;
             top: -70px;
-            left: 0;
-            z-index: 3;
+            left: 15px;
+            z-index: 1000;
         }
 
         .avatar {
+        	display: block;
             width: 50px;
             height: 50px;
             border-radius: 50%;
             cursor: pointer;
             border: 3px solid white;
             transition: opacity 0.3s ease;
+            box-sizing: border-box;
         }
 
         .dropdown {
@@ -488,21 +560,26 @@
         }
 
         .avatar-wrapper {
+        	display: flex;
+        	align-items: center;
+        	margin: 0;
+        	line-height: 0;
+        	height: 50px;
+        	width: 50px;
             position: relative;
             display: inline-block;
         }
 
         .online-indicator {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 10px;
-            height: 10px;
-            background-color: rgb(72, 221, 126);
-            border: 2px solid #fff;
-            border-radius: 50%;
-            box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px;
-        }
+    position: absolute;
+    bottom: 2px;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background-color: rgb(72, 221, 126);
+    border: 2px solid #fff;
+    border-radius: 50%;
+}
 
         .pin-pulse {
             width: 300px;

@@ -131,6 +131,9 @@
     const order = /*[[${order}]]*/ null;
     const noActiveOrder = /*[[${noActiveOrder}]]*/ false;
     const tg = Telegram.WebApp;
+    const ORDER_POLL_INTERVAL = 5000;
+    let orderStatusPollTimer = null;
+    
 
     if (!initData) {
         tg.showAlert('Error: Unable to retrieve Telegram data.');
@@ -171,7 +174,7 @@
 
         const map = new mapboxgl.Map({
             container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v11',
+            style: 'mapbox://styles/mapbox/navigation-day-v1',
             center: [startLng, startLat],
             zoom: 12
         });
@@ -321,6 +324,54 @@
                 stopHeartbeat();
             }
         }
+        
+        
+        function startOrderStatusPolling() {
+            if (orderStatusPollTimer) return;
+            
+            orderStatusPollTimer = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/orders/${order.id}`, {
+                        method: 'GET',
+                        headers: { 'X-Telegram-Init-Data': initData }
+                    });
+
+                    if (response.status === 404 || response.status === 204) {
+                        // Заказ вообще исчез
+                        handleOrderTerminated('Order no longer exists.');
+                        return;
+                    }
+
+                    const updatedOrder = await response.json();
+
+                    // Если статус стал CANCELED или COMPLETED не через текущий экран
+                    const terminalStatuses = ['CANCELED', 'COMPLETED'];
+                    if (terminalStatuses.includes(updatedOrder.status) && updatedOrder.status !== order.status) {
+                        let message = 'Order was cancelled by the client.';
+                        if (updatedOrder.status === 'COMPLETED') message = 'Order was marked as completed.';
+                        
+                        handleOrderTerminated(message);
+                    }
+                } catch (err) {
+                    console.error('Polling error:', err);
+                }
+            }, ORDER_POLL_INTERVAL);
+        }
+
+        function handleOrderTerminated(message) {
+            stopOrderStatusPolling();
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+            
+            tg.showAlert(message, () => {
+                window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
+            });
+        }
+
+        function stopOrderStatusPolling() {
+            clearInterval(orderStatusPollTimer);
+            orderStatusPollTimer = null;
+        }
+        
 
         function startHeartbeat() {
             if (heartbeatTimer) return;
@@ -332,10 +383,27 @@
             clearInterval(heartbeatTimer);
             heartbeatTimer = null;
         }
+        
+        
+     	// --- Activity Monitoring ---
+        /**
+         * Stops/Starts all timers when the user switches apps or minimizes Telegram.
+         */
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopHeartbeat();
+                stopOrderStatusPolling();
+            } else {
+                startHeartbeat();
+                startOrderStatusPolling();
+            }
+        });
+        
 
         // --- UI Logic & Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             startHeartbeat();
+            startOrderStatusPolling();
             const btnClientInCar = document.getElementById('btn-client-in-car');
             const btnComplete = document.getElementById('btn-complete-trip');
             const btnCancel = document.getElementById('btn-cancel-trip');

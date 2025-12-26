@@ -19,13 +19,18 @@
 </div>
 
 <div class="orders-container" id="available-orders-list">
-    <div class="loading">Loading orders...</div>
+    <div class="loading">No orders yet...</div>
 </div>
 
 <script>
 	// Configuration
     const HEARTBEAT_INTERVAL = 30000;
     let heartbeatTimer = null;
+    
+    const ORDERS_POLL_INTERVAL = 5000; // Update every 5 sec
+    let ordersPollTimer = null;
+    
+    let lastOrdersTouch = "";
 
     const initData = Telegram.WebApp?.initData || Telegram.WebApp?.initDataUnsafe || '';
     const ordersList = document.getElementById('available-orders-list');
@@ -90,10 +95,21 @@
             if (!response.ok) throw new Error('Failed to load orders');
 
             const orders = await response.json();
+            
+            const currentTouch = orders.map(o => o.id + o.status).join('|');
+            
+            if (currentTouch === lastOrdersTouch) {
+                return;
+            }
+            
+            lastOrdersTouch = currentTouch;
             renderOrders(orders);
         } catch (err) {
             console.error('Load available orders error:', err);
-            ordersList.innerHTML = '<div class="error">Error loading orders. Please try again.</div>';
+            if (!ordersList.innerHTML || ordersList.querySelector('.loading')) {
+                ordersList.innerHTML = '<div class="error">Error loading orders. Please try again.</div>';
+            }
+            lastOrdersTouch = "";
         }
     }
 
@@ -102,7 +118,7 @@
         ordersList.innerHTML = '';
 
         if (orders.length === 0) {
-            ordersList.innerHTML = '<div class="empty">No rides yet.</div>';
+            ordersList.innerHTML = '<div class="empty">No orders yet...</div>';
             return;
         }
 
@@ -174,6 +190,17 @@
     function goToHistory() {
         window.location.href = `/driver/orders-history?initData=${encodeURIComponent(initData)}`;
     }
+    
+    function startOrdersPolling() {
+        if (ordersPollTimer) return;
+        loadAvailableOrders();
+        ordersPollTimer = setInterval(loadAvailableOrders, ORDERS_POLL_INTERVAL);
+    }
+
+    function stopOrdersPolling() {
+        clearInterval(ordersPollTimer);
+        ordersPollTimer = null;
+    }
 
  	// --- Initialization ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -186,8 +213,26 @@
         });
 
         startHeartbeat();
-        loadAvailableOrders();
+        startOrdersPolling();
     });
+ 	
+ 	// --- Activity Monitoring ---
+    /**
+     * Stops/Starts all timers when the user switches apps or minimizes Telegram.
+     */
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            console.log('App hidden: stopping timers');
+            stopHeartbeat();
+            stopOrdersPolling();
+        } else {
+            console.log('App visible: resuming timers');
+            startHeartbeat();
+            startOrdersPolling();
+        }
+    });
+ 	
+ 	
 </script>
 
 </body>
