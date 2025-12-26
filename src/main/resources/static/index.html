@@ -185,9 +185,14 @@ button {
     background-color: white;
     backdrop-filter: blur(30px);
     max-width: 500px;
+    display: flex;
+    flex-direction: column;
 }
 
+
+
 .form-overlay.hidden {
+	display: none !important;
     opacity: 0;
     pointer-events: none;
 }
@@ -645,6 +650,30 @@ img.avatar {
     border: 0;
 }
 
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+}
+
+.fade-in {
+    opacity: 1;
+}
+
+.form-ready {
+    animation: slideUp 0.4s ease-out forwards;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 </style>
 
     <!-- Preload scripts -->
@@ -701,7 +730,7 @@ img.avatar {
 </div>
 
 
-<div class="form-overlay" id="formOverlay">
+<div class="form-overlay fade-out" id="formOverlay">
 
     <!-- User Menu -->
     <div class="user-menu">
@@ -719,12 +748,11 @@ img.avatar {
 <div>
     <form id="orderForm">
 
-        <div id="active-order-container" style="display: none;">
+        <div id="active-order-container" style="display: none; padding: 0 5px;">
             <div style="display: block; padding: 0 5px;">
-                <p id="active-order-status-text" style="font-weight: bold; margin-bottom: 5px;"></p>
-            </div>
-            <div style="display: block; padding: 0 5px;">
-                <div id="driver-info" style="font-size: 0.9em; color: #666;"></div>
+                <p id="active-order-status-text" style="font-weight: bold; margin: 0 0 5px 0; min-height: 1.2em;"></p>
+                <div id="driver-info" style="font-size: 0.9em; color: #666; min-height: 1em;"></div>
+                <div style="margin-bottom: 10px;"></div>
             </div>
         </div>
 
@@ -751,7 +779,7 @@ img.avatar {
             </div>
         </div>
 
-        <div id="form-bonusFare-block" style="display: none; align-items: center; gap: 5px; margin-top: 10px;">
+        <div id="form-bonusFare-block" style="display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 10px;">
             <button class="btn bonusFare-btn" type="button" onclick="adjustBonus(-5)">−</button>
             <input type="number" id="bonusFare" placeholder="0" step="5" min="0" readonly>
             <button class="btn bonusFare-btn" type="button" onclick="adjustBonus(5)">+</button>
@@ -763,13 +791,15 @@ img.avatar {
         <input type="hidden" id="endLongitude">
         <input type="hidden" id="price">
 
-        <div class="form-line-block" style="display: block; padding: 10px 5px 0 5px;">
-            <p class="form-lines-text" id="estimatedPriceText">Estimated price: ~50.00</p>
-            <hr class="form-lines-line">
+        <div class="form-line-block"style="padding: 10px 5px 0 5px; text-align: center;">
+            <p class="form-lines-text" id="estimatedPriceText" style="margin: 0; line-height: 1.2; min-height: 1.2em;">
+        		Estimated price: ... </p>
+            <hr class="form-lines-line" style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
         </div>
 
-        <div id="form-menuBookPayment-block" style="display: none; margin-top: 10px;">
-            <button type="submit" class="btn book" style="width: 100%;">Book a ride</button>
+        <div id="form-menuBookPayment-block" style="padding-top: 5px; min-height: 50px;">
+            <button type="submit" class="btn book"
+            style="width: 100%; height: 45px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1;">Book a ride</button>
         </div>
 
     </form>

@@ -275,6 +275,11 @@ async function initWebApp() {
 	initData = WebApp.initData;
 	
 	await loadConfig();
+	
+	const formOverlay = document.getElementById('formOverlay');
+	    if (formOverlay) {
+	        formOverlay.classList.add('fade-in', 'form-ready');
+	}
 
 	fetch(`/api/orders/client-current`, {
 		method: 'GET',
