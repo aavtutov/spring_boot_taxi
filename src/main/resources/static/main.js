@@ -1,3 +1,4 @@
+// --- Configuration & Global State ---
 mapboxgl.accessToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWpocDFpdmsxOW91M2NzNmZuc2kza3BjIn0.QJgCGsTJFtZGcJyxgQlDyA';
 
 let initData = '';
@@ -11,8 +12,6 @@ let lastKnownOrder = null;
 
 let startMarker = null;
 let endMarker = null;
-
-// Переменные для хранения предварительных данных Mapbox (до отправки на сервер)
 let aproximateDistance = null; // km
 let aproximateDuration = null;  // min
 
@@ -22,30 +21,23 @@ tg.ready();
 tg.expand();
 if (tg.requestFullscreen) tg.requestFullscreen();
 
-// Элегантный наблюдатель за размером
+// Observer to handle map resizing when window/keyboard changes
 const resizeObserver = new ResizeObserver(() => {
     if (map) map.resize();
 });
-
 resizeObserver.observe(document.body);
 
-// Customize the header colors to match the design
 tg.setHeaderColor('secondary_bg_color');
 
 document.addEventListener('DOMContentLoaded', () => {
 	initMap();
 	initWebApp();
-
-	// Скрываем кнопку "Back" — Telegram покажет "Close"
 	Telegram.WebApp.BackButton.hide();
-
 	initAddressModal();
 	initNotesModal();
 });
 
-// ============================
-// Mapbox
-// ============================
+// --- Mapbox ---
 function initMap() {
 	map = new mapboxgl.Map({
 		container: 'map',
@@ -61,6 +53,7 @@ function initMap() {
 	map.on('mousedown', () => userInteracted = true);
 	map.on('touchstart', () => userInteracted = true);
 
+	// Hide UI overlay during map movement for better visibility
 	map.on('movestart', () => {
 		if (!userInteracted) return;
 		formOverlay.classList.add('hidden');
@@ -72,11 +65,12 @@ function initMap() {
 		hideTimeout = setTimeout(() => formOverlay.classList.remove('hidden'), 1000);
 
 		if (formLocked) return;
-
 		userInteracted = false;
 
 		const bounds = map.getBounds();
 		const center = map.getCenter();
+		
+		// Offset the lat to keep the pin center slightly above the UI cards
 		const adjustedLat = center.lat + (bounds.getNorth() - bounds.getSouth()) * 0.2;
 
 		const address = await reverseGeocode(center.lng, adjustedLat);
@@ -85,7 +79,6 @@ function initMap() {
 		} else {
 			updateAddressFields('end', address, adjustedLat, center.lng);
 		}
-
 		updateEstimatedPriceIfPossible();
 	});
 }
@@ -103,7 +96,7 @@ function updateAddressFields(type, address, lat, lng) {
 	document.getElementById(`${type}Longitude`).value = lng.toFixed(6);
 }
 
-// *** Обновленная логика расчета ПРЕДВАРИТЕЛЬНОЙ цены на фронте ***
+// --- Pricing & Distance ---
 async function updateEstimatedPriceIfPossible() {
 	const startLat = parseFloat(document.getElementById('startLatitude').value);
 	const startLng = parseFloat(document.getElementById('startLongitude').value);
@@ -113,7 +106,7 @@ async function updateEstimatedPriceIfPossible() {
 	if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
 		aproximateDistance = null;
 		aproximateDuration = null;
-        estimated = 50; // Базовая цена
+        estimated = 50;
 		updateEstimatedPriceText();
 		return;
 	}
@@ -128,22 +121,18 @@ async function updateEstimatedPriceIfPossible() {
 			const distanceKm = route.distance / 1000;
 			const durationMin = route.duration / 60;
 
-			// Сохраняем значения для отправки на бэкенд
 			aproximateDistance = distanceKm;
 			aproximateDuration = durationMin;
 			
-			// Рассчитываем предварительную цену на ФРОНТЕ
 			estimated = estimatePrice(distanceKm, durationMin);
 			document.getElementById('price').value = estimated;
 			updateEstimatedPriceText();
 		}
 	} catch (err) {
-		console.error("Ошибка при получении маршрута Mapbox:", err);
+		console.error("Route calculation error:", err);
 	}
 }
 
-// *** Удалены toRad и calculateDistance ***
-// *** Оставляем estimatePrice для предварительной оценки ***
 function estimatePrice(distanceKm, durationMin) {
 	const baseFare = 50;
 	const perKmRate = 20;
@@ -164,9 +153,7 @@ function updateEstimatedPriceText() {
 		`Estimated price: ~${estimated} (+${bonusFromUser} tip) = ~${total}.00`;
 }
 
-// ============================
-// Notes Modal
-// ============================
+// --- Modals (Notes & Address Search) ---
 function initNotesModal() {
 	const notesInput = document.getElementById('notes');
 	const notesModal = document.getElementById('notesModal');
@@ -193,9 +180,7 @@ function initNotesModal() {
 	});
 }
 
-// ============================
-// Address Modal (Mapbox search)
-// ============================
+// --- Address Modal (Mapbox search) ---
 function initAddressModal() {
 	const startInput = document.getElementById('startAddress');
 	const endInput = document.getElementById('endAddress');
@@ -244,7 +229,7 @@ function initAddressModal() {
 	});
 
 	function openAddressModal(field) {
-		console.log('Открываю модалку для поля:', field);
+		console.log('Open modal for field: ', field);
 		currentField = field;
 		modal.classList.remove('hidden');
 		input.value = '';
@@ -264,9 +249,7 @@ function initAddressModal() {
 	}
 }
 
-// ============================
-// Telegram WebApp + отправка заказа
-// ============================
+// --- Telegram WebApp ---
 function initWebApp() {
 	if (!window.Telegram || !Telegram.WebApp) return;
 
@@ -278,7 +261,7 @@ function initWebApp() {
 		method: 'GET',
 		headers: { 'X-Telegram-Init-Data': initData }
 	})
-		.then(async res => {
+	.then(async res => {
 			if (res.status === 204) {
 				showOrderForm(); // Client doesnt have any orders
 				return;
@@ -297,30 +280,24 @@ function initWebApp() {
 			}
 		})
 		.catch(err => {
-			console.error('Ошибка при получении заказа:', err);
-			showOrderForm(); // Fallback — если ошибка, всё равно показываем форму
+			console.error('Error getting order: ', err);
+			showOrderForm();
 		});
 
-	// Навешиваем обработчики на форму и кнопку водителя
 	document.getElementById('orderForm').addEventListener('submit', handleOrderSubmission);
 }
 
 function showOrderForm() {
 	document.getElementById('form-bonusFare-block').style.display = 'flex';
 	document.getElementById('form-menuBookPayment-block').style.display = 'flex';
-
-	// Скрываем блок с активным заказом
 	document.getElementById('active-order-container').style.display = 'none';
 
-	// Прячем cancel кнопку
 	const cancelBtn = document.getElementById('cancel-order-button');
 	if (cancelBtn) cancelBtn.style.display = 'none';
 
-	// Показываем форму
 	const form = document.getElementById('orderForm');
 	if (form) form.style.display = 'block';
 
-	// Разблокируем поля
 	['startAddress', 'endAddress', 'notes'].forEach(id => {
 		const el = document.getElementById(id);
 		if (el) {
@@ -329,11 +306,9 @@ function showOrderForm() {
 		}
 	});
 
-	// Обнуляем сообщения
 	const statusText = document.getElementById('active-order-status-text');
 	if (statusText) statusText.textContent = '';
 	
-	// Проверяем, есть ли что повторить
 	if (lastKnownOrder && lastKnownOrder.endAddress) {
 		renderLastTripChip(lastKnownOrder);
 	}
@@ -341,19 +316,17 @@ function showOrderForm() {
 
 function renderLastTripChip(order) {
     hideLastTripChip();
-
     const chip = document.createElement('div');
     chip.id = 'last-trip-chip';
     chip.className = 'last-trip-chip';
     
-    // Берем только улицу, чтобы кнопка не была слишком длинной
-	const shortStartAddress = order.startAddress.split(',')[0];
-    const shortEndAddress = order.endAddress.split(',')[0];
+	const shortStart = order.startAddress.split(',')[0];
+    const shortEnd = order.endAddress.split(',')[0];
     
     chip.innerHTML = `
 		<div class="chip-content">
-	        <span class="addr start-addr">${shortStartAddress}</span>
-	        <span class="addr end-addr">${shortEndAddress}</span>
+	        <span class="addr start-addr">${shortStart}</span>
+	        <span class="addr end-addr">${shortEnd}</span>
 	    </div>
     `;
 
@@ -363,7 +336,6 @@ function renderLastTripChip(order) {
         chip.remove(); 
     };
 
-    // Находим обертку аватара и вставляем кнопку сразу ПОСЛЕ неё
     const avatarWrapper = document.querySelector('.avatar-wrapper');
     if (avatarWrapper) {
         avatarWrapper.insertAdjacentElement('afterend', chip);
@@ -371,7 +343,6 @@ function renderLastTripChip(order) {
 }
 
 function fillFormFromHistory(order) {
-    // Заполняем поля только сейчас, по желанию пользователя
     document.getElementById('startAddress').value = order.startAddress || '';
     document.getElementById('endAddress').value = order.endAddress || '';
     document.getElementById('startLatitude').value = order.startLatitude || '';
@@ -384,8 +355,6 @@ function fillFormFromHistory(order) {
         document.getElementById('bonusFare').value = order.bonusFare;
         bonusFromUser = parseInt(order.bonusFare);
     }
-
-    // Обновляем расчеты цены
     updateEstimatedPriceIfPossible();
 }
 
@@ -396,7 +365,6 @@ async function handleOrderSubmission(e) {
 	const bookBtn = e.target.querySelector('.btn.book');
 	const statusMessage = document.getElementById('statusMessage');
     
-	// 1. Double protection: logical + physical
 	if (formLocked || (bookBtn && bookBtn.disabled)) return;
 	
     const payload = {
@@ -411,14 +379,12 @@ async function handleOrderSubmission(e) {
         notes: getValue('notes'),
     };
 
-    // Validation: Ensure points are selected
     if (!payload.startAddress || !payload.endAddress || isNaN(payload.startLatitude) || isNaN(payload.endLatitude)) {
         statusMessage.textContent = '⚠️ Please select both points on the map.';
         statusMessage.style.color = 'red';
         return;
     }
 	
-	// 2. Instantly disable the button and show loading state
 	bookBtn.disabled = true;
 	bookBtn.style.opacity = '0.5';
 	const originalText = bookBtn.textContent;
@@ -438,10 +404,9 @@ async function handleOrderSubmission(e) {
 
         if (response.ok) {
 			lastKnownOrder = result;
-            statusMessage.textContent = ''; // Clear errors on success
-            handleActiveOrder(result); // Switch UI to active order mode
+            statusMessage.textContent = '';
+            handleActiveOrder(result);
         } else {
-			// IMPORTANT: If server returned error, enable button back!
 			bookBtn.disabled = false;
 			bookBtn.style.opacity = '1';
 			bookBtn.textContent = originalText;
@@ -450,17 +415,13 @@ async function handleOrderSubmission(e) {
             statusMessage.style.color = 'red';
         }
     } catch (err) {
-		// IMPORTANT: If network failed, enable button back!
 		bookBtn.disabled = false;
 		bookBtn.style.opacity = '1';
 		bookBtn.textContent = originalText;
 		
-        /*console.error('Submission error:', err);
+        console.error('Submission error:', err);
         statusMessage.textContent = 'Network error. Please try again.';
-		statusMessage.style.color = 'red';*/
-		console.error('ПОЛНАЯ ОШИБКА:', err);
-		    statusMessage.textContent = `JS Error: ${err.message}`; 
-		    statusMessage.style.color = 'red';
+		statusMessage.style.color = 'red';
     }
 }
 
@@ -468,14 +429,13 @@ function getValue(id) {
 	return document.getElementById(id).value;
 }
 
+// --- Active Order UI Management ---
 function handleActiveOrder(order) {
 	hideLastTripChip();
 	
-    // 1. Hide the bonus/tips block to save space
     const bonusBlock = document.getElementById('form-bonusFare-block');
     if (bonusBlock) bonusBlock.style.display = 'none';
 
-    // 2. Transform the "Book" button into a "Cancel" button
     const mainButtonContainer = document.getElementById('form-menuBookPayment-block');
     const bookBtn = mainButtonContainer?.querySelector('.btn.book');
     
@@ -483,27 +443,23 @@ function handleActiveOrder(order) {
 		bookBtn.disabled = false;
 		bookBtn.style.opacity = '1';
         bookBtn.textContent = 'Cancel Trip';
-        bookBtn.classList.add('cancel-mode'); // Use this class for red styling in CSS
-        bookBtn.type = 'button'; // Prevent form submission
-        bookBtn.onclick = () => cancelOrder(order); // Assign cancellation logic
+        bookBtn.classList.add('cancel-mode');
+        bookBtn.type = 'button';
+        bookBtn.onclick = () => cancelOrder(order);
     }
     
     if (mainButtonContainer) mainButtonContainer.style.display = 'flex';
 
-    // 3. Display the active order info container (status & driver)
     const activeOrderContainer = document.getElementById('active-order-container');
     if (activeOrderContainer) activeOrderContainer.style.display = 'block';
 
-    // 4. Hide the interactive pin core on the map
     const pinCore = document.querySelector('#marker-pin .pin-core');
     if (pinCore) pinCore.style.display = 'none';
 
-    // 5. Fill address and notes from the order data
     document.getElementById('startAddress').value = order.startAddress || '';
     document.getElementById('endAddress').value = order.endAddress || '';
     document.getElementById('notes').value = order.notes || '';
 
-    // 6. Update Price Display with active order formatting
     const total = parseFloat(order.price || 0) + parseFloat(order.bonusFare || 0);
     const priceTextEl = document.getElementById('estimatedPriceText');
     if (priceTextEl) {
@@ -514,7 +470,6 @@ function handleActiveOrder(order) {
         priceTextEl.classList.add('active-price-format');
     }
 
-    // 7. Lock input fields to Read-Only
     ['startAddress', 'endAddress', 'notes'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -523,7 +478,6 @@ function handleActiveOrder(order) {
         }
     });
 
-    // 8. Update Order Status and Driver Info
     const statusText = document.getElementById('active-order-status-text');
     const driverInfo = document.getElementById('driver-info');
     
@@ -556,12 +510,10 @@ function handleActiveOrder(order) {
             driverInfo.textContent = '';
     }
 
-    // 9. Global app state updates
     lockFormInteractions();
     currentOrder = order;
     startPollingOrderStatus(order.id);
 
-    // 10. Draw the static route on the map
     drawRouteOnMap(
         [order.startLongitude, order.startLatitude],
         [order.endLongitude, order.endLatitude]
@@ -569,24 +521,17 @@ function handleActiveOrder(order) {
 }
 
 function lockFormInteractions() {
-
-	// Запрещаем редактировать поля
 	formLocked = true;
 
-	// Отключить кнопки выбора адресов
 	['pin-button-start', 'pin-button-end', 'pin-button-notes'].forEach(id => {
 		const btn = document.getElementById(id);
 		if (btn) btn.disabled = true;
 	});
-
-	// Сделать все иконки полупрозрачными
 	updateIconsOpacity(null);
 }
 
 
-// ============================
-// Helpers
-// ============================
+// --- Helpers ---
 function setSelectionMode(mode) {
 	if (formLocked) return;
 	selectionMode = mode;
@@ -601,13 +546,11 @@ function updateIconsOpacity(activeMode) {
 	});
 }
 
-// Added shouldReset parameter (default is true to keep current behavior)
 function formInactive(shouldReset = true) {
     formLocked = false;
     setSelectionMode('start');
     removePulseFromMarker();
 
-    // 1. Reset the "Cancel" button back to "Book a ride"
     const mainButtonContainer = document.getElementById('form-menuBookPayment-block');
     const bookBtn = mainButtonContainer?.querySelector('.btn.book');
     
@@ -616,11 +559,10 @@ function formInactive(shouldReset = true) {
         bookBtn.classList.remove('cancel-mode');
         bookBtn.type = 'submit'; 
         bookBtn.onclick = null;
-        bookBtn.disabled = false; // Ensure button is active
-        bookBtn.style.opacity = '1'; // Ensure button is fully visible
+        bookBtn.disabled = false;
+        bookBtn.style.opacity = '1';
     }
 
-    // 2. Restore visibility of UI blocks
     if (mainButtonContainer) mainButtonContainer.style.display = 'flex';
     
     const bonusBlock = document.getElementById('form-bonusFare-block');
@@ -629,11 +571,9 @@ function formInactive(shouldReset = true) {
     const pinCore = document.querySelector('#marker-pin .pin-core');
     if (pinCore) pinCore.style.display = 'block';
 
-    // 3. Hide active order details
     const activeOrderContainer = document.getElementById('active-order-container');
     if (activeOrderContainer) activeOrderContainer.style.display = 'none';
 
-    // 4. Conditional Reset of form fields and state
     if (shouldReset) {
         const form = document.getElementById('orderForm');
         if (form) form.reset();
@@ -644,17 +584,14 @@ function formInactive(shouldReset = true) {
             priceTextEl.classList.remove('active-price-format');
         }
 
-        // Reset internal state variables
         bonusFromUser = 0;
         estimated = 50;
 		
-		// ПОСЛЕ сброса формы показываем кнопку повтора
 		if (lastKnownOrder) {
 			renderLastTripChip(lastKnownOrder);
 		}
 		
     } else {
-        // If we DON'T reset, just restore the price text formatting
         updateEstimatedPriceText(); 
         const priceTextEl = document.getElementById('estimatedPriceText');
         if (priceTextEl) {
@@ -664,13 +601,11 @@ function formInactive(shouldReset = true) {
 
     currentOrder = null;
 
-    // 5. Unlock interaction with address/notes buttons
     ['pin-button-start', 'pin-button-end', 'pin-button-notes'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.disabled = false;
     });
 
-    // 6. Remove Read-Only attributes from inputs
     ['startAddress', 'endAddress', 'notes'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -679,10 +614,8 @@ function formInactive(shouldReset = true) {
         }
     });
 
-    // 7. Stop server polling
     stopPollingOrderStatus();
 
-    // 8. Clean up map layers and markers
     if (map.getSource('route')) {
         map.removeLayer('route');
         map.removeSource('route');
@@ -714,9 +647,8 @@ async function cancelOrder(order) {
 
         if (response.ok) {
 			lastKnownOrder = order;
-            // Successfully canceled, return UI to default state
 			removePulseFromMarker();
-            formInactive(true); // Client cancelled the order - reset form
+            formInactive(true);
         } else {
             const error = await response.json();
             console.error('Cancellation failed:', error);
@@ -728,9 +660,7 @@ async function cancelOrder(order) {
 }
 
 
-// ============================
-// User-menu and avatar
-// ============================
+// --- User-menu and avatar ---
 const user = Telegram.WebApp.initDataUnsafe.user;
 if (user?.photo_url) {
 	document.getElementById('user-avatar').src = user.photo_url;
@@ -758,9 +688,7 @@ document.addEventListener('click', (e) => {
 });
 
 
-// ============================
-// Pulsation
-// ============================
+// --- Pulsation ---
 function showPulseOnMarker() {
 	const pulse = document.querySelector('#marker-pin .pin-pulse');
 	if (pulse) pulse.style.display = 'block';
@@ -771,9 +699,7 @@ function removePulseFromMarker() {
 	if (pulse) pulse.style.display = 'none';
 }
 
-// ============================
-// Polling
-// ============================
+// --- Polling ---
 function startPollingOrderStatus(orderId) {
 	stopPollingOrderStatus();
 
@@ -806,14 +732,14 @@ function startPollingOrderStatus(orderId) {
 						case 'CANCELED':
 							if (updatedOrder.cancellationSource === 'DRIVER') {
 								alert("Your ride was cancelled by the driver");
-								formInactive(false); // save order data
+								formInactive(false);
 							} else {
-								formInactive(true); // Clear (cancelled by client or system)
+								formInactive(true);
 							}
 							break;
 						case 'COMPLETED':
 							alert(`Your ride was completed!\nTotal price: ${updatedOrder.totalPrice}`);
-							formInactive(true); // Clear for a new ride
+							formInactive(true);
 							break;
 						default:
 							alert(`Order status: ${updatedOrder.status}`);
@@ -841,12 +767,9 @@ function hideLastTripChip() {
     if (chip) chip.remove();
 }
 
-// ============================
-// Draw Route
-// ============================
+// --- Draw Route ---
 async function drawRouteOnMap(start, end) {
 
-	// Clear previous markers
 	if (startMarker) startMarker.remove();
 	if (endMarker) endMarker.remove();
 
@@ -915,6 +838,14 @@ async function drawRouteOnMap(start, end) {
 		console.error('Route calculation error:', err);
 	}
 }
+// --- Visibility / Lifecycle ---
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopPollingOrderStatus();
+    } else if (currentOrder) {
+        startPollingOrderStatus(currentOrder.id);
+    }
+});
 
 
 
