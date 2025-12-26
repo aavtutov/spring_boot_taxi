@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.aavtutov.spring.boot.spring_boot_taxi.config.FareProperties;
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.ClientRepository;
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.DriverRepository;
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.OrderRepository;
@@ -39,13 +40,15 @@ public class OrderServiceImpl implements OrderService {
 	private final FareCalculator fareCalculator;
 	private final MapboxRoutingService mapboxRoutingService;
 	private final TelegramBotService telegramBotService;
+	private final FareProperties fareProperties;
+	
 
 	private static final List<OrderStatus> ACTIVE_ORDER_STATUSES = List.of(OrderStatus.PENDING, OrderStatus.ACCEPTED,
 			OrderStatus.IN_PROGRESS);
 
 	public OrderServiceImpl(OrderRepository orderRepository, DriverRepository driverRepository,
 			ClientRepository clientRepository, OrderValidator orderValidator, FareCalculator fareCalculator,
-			MapboxRoutingService mapboxRoutingService, TelegramBotService telegramBotService) {
+			MapboxRoutingService mapboxRoutingService, TelegramBotService telegramBotService, FareProperties fareProperties) {
 		this.orderRepository = orderRepository;
 		this.driverRepository = driverRepository;
 		this.clientRepository = clientRepository;
@@ -53,6 +56,7 @@ public class OrderServiceImpl implements OrderService {
 		this.fareCalculator = fareCalculator;
 		this.mapboxRoutingService = mapboxRoutingService;
 		this.telegramBotService = telegramBotService;
+		this.fareProperties = fareProperties;
 	}
 
 	// --- Private Helper Methods ---
@@ -190,10 +194,11 @@ public class OrderServiceImpl implements OrderService {
 			String message = String.format("🏁 Your ride was completed!"
 					+ "\n\n-From: %s"
 					+ "\n-To: %s"
-					+ "\n\nTotal Price: %.2f",
+					+ "\n\nTotal Price: %.2f %s",
 					savedOrder.getStartAddress(),
 					savedOrder.getEndAddress(),
-					savedOrder.getTotalPrice()
+					savedOrder.getTotalPrice(),
+					fareProperties.getCurrency()
 			);
 			telegramBotService.sendMessage(clientChatId, message);
 		}

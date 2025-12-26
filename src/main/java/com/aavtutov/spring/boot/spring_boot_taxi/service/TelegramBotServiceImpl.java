@@ -1,10 +1,14 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.service;
 
+import java.time.Duration;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 /**
  * Concrete implementation of the {@link TelegramBotService} responsible for
@@ -15,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * communication and handles configuration via a Telegram bot token.
  * </p>
  */
+@Slf4j
 @Service
 public class TelegramBotServiceImpl implements TelegramBotService {
 
@@ -52,18 +57,21 @@ public class TelegramBotServiceImpl implements TelegramBotService {
 	public void sendMessage(String chatId, String message) {
 		String urlPath = String.format("/bot%s/sendMessage", botToken);
 
-		webClient.post().uri(urlPath)
+		webClient.post()
+				.uri(urlPath)
 
 				// Rationale: The Telegram API expects 'chat_id' and 'text' as request body
 				// parameters.
-				.bodyValue(Map.of("chat_id", chatId, "text", message)).retrieve().bodyToMono(String.class)
-
+				.bodyValue(Map.of("chat_id", chatId, "text", message))
+				.retrieve()
+				.bodyToMono(String.class)
+				.timeout(Duration.ofSeconds(5))
 				// Rationale: Handle any errors during the network call or API response.
 				// Errors are logged but not re-thrown to prevent blocking the calling thread.
 				.doOnError(error -> {
-					System.out.println("Error sending Telegram message: " + error.getMessage());
-				})
-
+		            log.error("Telegram API error [chatId: {}]: {}", chatId, error.getMessage());
+		        })
+				.onErrorResume(e -> Mono.empty())
 				// Rationale: The .subscribe() call executes the reactive pipeline
 				// asynchronously.
 				.subscribe();
