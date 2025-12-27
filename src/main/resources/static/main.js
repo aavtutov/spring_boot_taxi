@@ -518,14 +518,14 @@ function handleActiveOrder(order) {
             removePulseFromMarker();
             statusText.textContent = `Arrival time ~10 min`;
             if (order.driver) {
-                driverInfo.innerHTML = `${order.driver.carModel} <span class="license-plate">${order.driver.licensePlate}</span> • ${order.driver.carColor}`;
+                driverInfo.innerHTML = `${order.driver.carColor} ${order.driver.carModel} • <span class="license-plate">${order.driver.licensePlate}</span>`;
             }
             break;
         case 'IN_PROGRESS':
             removePulseFromMarker();
             statusText.textContent = `ETA ~${displayDuration} (${displayDistance})`;
             if (order.driver) {
-                driverInfo.innerHTML = `${order.driver.carModel} <span class="license-plate">${order.driver.licensePlate}</span> • ${order.driver.carColor}`;
+                driverInfo.innerHTML = `${order.driver.carColor} ${order.driver.carModel} • <span class="license-plate">${order.driver.licensePlate}</span>`;
             }
             break;
         default:
