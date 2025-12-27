@@ -62,25 +62,26 @@ function initMap() {
 	});
 
 	map.on('moveend', async () => {
-		clearTimeout(hideTimeout);
-		hideTimeout = setTimeout(() => formOverlay.classList.remove('hidden'), 1000);
+	    clearTimeout(hideTimeout);
+	    hideTimeout = setTimeout(() => formOverlay.classList.remove('hidden'), 1000);
 
-		if (formLocked) return;
-		userInteracted = false;
+	    if (formLocked) return;
+	    userInteracted = false;
 
-		const bounds = map.getBounds();
-		const center = map.getCenter();
-		
-		// Offset the lat to keep the pin center slightly above the UI cards
-		const adjustedLat = center.lat + (bounds.getNorth() - bounds.getSouth()) * 0.2;
+	    const viewportCenter = map.getCenter();
+	    
+	    const pixelCenter = map.project(viewportCenter);
+	    
+	    const addressCoords = map.unproject([pixelCenter.x, pixelCenter.y]);
 
-		const address = await reverseGeocode(center.lng, adjustedLat);
-		if (selectionMode === 'start') {
-			updateAddressFields('start', address, adjustedLat, center.lng);
-		} else {
-			updateAddressFields('end', address, adjustedLat, center.lng);
-		}
-		updateEstimatedPriceIfPossible();
+	    const address = await reverseGeocode(addressCoords.lng, addressCoords.lat);
+	    
+	    if (selectionMode === 'start') {
+	        updateAddressFields('start', address, addressCoords.lat, addressCoords.lng);
+	    } else {
+	        updateAddressFields('end', address, addressCoords.lat, addressCoords.lng);
+	    }
+	    updateEstimatedPriceIfPossible();
 	});
 }
 
@@ -862,6 +863,54 @@ async function drawRouteOnMap(start, end) {
 		console.error('Route calculation error:', err);
 	}
 }
+
+function useCurrentLocation() {
+	if (!navigator.geolocation) {
+	        tg.showAlert("Geolocation is not supported by your device.");
+	        return;
+	    }
+
+	if (typeof mapboxgl === 'undefined') {
+		console.error("Mapbox library not found");
+		return;
+	}
+
+    const options = {
+        enableHighAccuracy: true,
+        timeout: 7000,
+        maximumAge: 0
+    };
+
+	navigator.geolocation.getCurrentPosition(
+	        (position) => {
+	            const { latitude, longitude } = position.coords;
+
+	            tg.HapticFeedback.impactOccurred('light');
+
+	            if (typeof map !== 'undefined' && map) {
+	                // We fly the camera to the user's location.
+	                // The 'moveend' event in your initMap will automatically 
+	                // handle updating the address fields once the flight finishes.
+	                map.flyTo({
+	                    center: [longitude, latitude],
+	                    zoom: 17,
+	                    padding: { bottom: 150, top: 0, left: 0, right: 0 },
+	                    essential: true,
+	                    duration: 2000
+	                });
+	            }
+	        },
+	        (error) => {
+	            console.error("GPS Error:", error);
+	            const message = error.code === 1 
+	                ? "Please allow location access for Telegram in your settings." 
+	                : "Location request timed out.";
+	            tg.showAlert(message);
+	        }, 
+	        options
+	    );
+	}
+
 // --- Visibility / Lifecycle ---
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
