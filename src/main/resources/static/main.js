@@ -246,7 +246,13 @@ function initAddressModal() {
 		const address = feature.place_name;
 
 		updateAddressFields(currentField, address, lat, lng);
-		map.flyTo({ center: [lng, lat], zoom: 17 });
+		map.flyTo({ 
+		        center: [lng, lat], 
+		        zoom: 17,
+		        padding: { bottom: 150, top: 0, left: 0, right: 0 },
+		        speed: 1.2,
+		        curve: 1.42
+		    });
 		modal.classList.add('hidden');
 	}
 }
@@ -882,34 +888,32 @@ function useCurrentLocation() {
     };
 
 	navigator.geolocation.getCurrentPosition(
-	        (position) => {
-	            const { latitude, longitude } = position.coords;
+        (position) => {
+            const { latitude, longitude } = position.coords;
 
-	            tg.HapticFeedback.impactOccurred('light');
+            tg.HapticFeedback.impactOccurred('light');
 
-	            if (typeof map !== 'undefined' && map) {
-	                // We fly the camera to the user's location.
-	                // The 'moveend' event in your initMap will automatically 
-	                // handle updating the address fields once the flight finishes.
-	                map.flyTo({
-	                    center: [longitude, latitude],
-	                    zoom: 17,
-	                    padding: { bottom: 150, top: 0, left: 0, right: 0 },
-	                    essential: true,
-	                    duration: 2000
-	                });
-	            }
-	        },
-	        (error) => {
-	            console.error("GPS Error:", error);
-	            const message = error.code === 1 
-	                ? "Please allow location access for Telegram in your settings." 
-	                : "Location request timed out.";
-	            tg.showAlert(message);
-	        }, 
-	        options
-	    );
-	}
+            if (typeof map !== 'undefined' && map) {
+                map.flyTo({
+                    center: [longitude, latitude],
+                    zoom: 17,
+                    padding: { bottom: 150, top: 0, left: 0, right: 0 },
+                    essential: true,
+                    speed: 1.2,
+					curve: 1.42
+                });
+            }
+        },
+        (error) => {
+            console.error("GPS Error:", error);
+            const message = error.code === 1 
+                ? "Please allow location access for Telegram in your settings." 
+                : "Location request timed out.";
+            tg.showAlert(message);
+        }, 
+        options
+    );
+}
 
 // --- Visibility / Lifecycle ---
 document.addEventListener('visibilitychange', () => {
