@@ -151,7 +151,7 @@ function adjustBonus(amount) {
 function updateEstimatedPriceText() {
 	const total = estimated + bonusFromUser;
 	document.getElementById('estimatedPriceText').textContent =
-		`Estimated price: ~${estimated} (+${bonusFromUser} tip) = ~${total} ${appConfig.currency}`;
+		`Price: ~${estimated} (+${bonusFromUser} tip) = ~${total} ${appConfig.currency}`;
 }
 
 // --- Modals (Notes & Address Search) ---
@@ -604,7 +604,7 @@ function formInactive(shouldReset = true) {
 
         const priceTextEl = document.getElementById('estimatedPriceText');
         if (priceTextEl) {
-            priceTextEl.textContent = `Estimated price: ~${appConfig.baseFare} ${appConfig.currency}`;
+            priceTextEl.textContent = `Price: ~${appConfig.baseFare} ${appConfig.currency}`;
             priceTextEl.classList.remove('active-price-format');
         }
 
