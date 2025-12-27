@@ -3,8 +3,10 @@
 A comprehensive information system for taxi management via Telegram. This project features a Spring Boot backend, a PostgreSQL database, and an Nginx Proxy Manager for secure infrastructure and SSL handling.
 
 ## 🔗 Live Demo
-You can test the bot live here: [@hop_in_taxi_bot](https://t.me/hop_in_taxi_bot)  
+You can test the functional prototype here: [@hop_in_taxi_bot](https://t.me/hop_in_taxi_bot)  
 *The WebApp is integrated directly into the bot interface.*
+
+> **Note:** This is a technical demonstration for educational purposes. No real trips are provided.
 
 
 ## 🚀 Quick Start (Docker)
@@ -139,9 +141,10 @@ docker-compose up -d db
 
 * **Java 17, Spring Boot 3**
 * **Spring Security** (Admin authentication)
-* **Spring Data JPA** (ORM)
-* **Telegram Integration** (WebApp SDK (Frontend) & Bot API (Backend))
+* **Spring Data JPA** (Hibernate ORM)
 * **PostgreSQL** (DB)
+* **API: Spring REST** (Integration with Telegram WebApp)
+* **Telegram Integration** (WebApp SDK (Frontend) & Bot API (Backend))
 * **Frontend**: JavaScript (ES6+), Thymeleaf, CSS3 (with Environment Variables).
 * **Mapbox** (Directions API & GL SDK)
 * **Infrastructure** (Docker, Docker Compose, Nginx)
@@ -154,5 +157,9 @@ To facilitate the review process, a **Demo Mode** is active when the app runs in
 
 
 ## 🛡 Security Note
+
+
+
+
 
 Never share your `.env` file or commit it to version control. The `.gitignore` file included in this project is configured to protect your credentials.
