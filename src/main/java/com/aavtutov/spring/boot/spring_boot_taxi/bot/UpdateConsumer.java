@@ -85,7 +85,7 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 			newClient.setTelegramChatId(chatId);
 			clientService.registerClient(newClient);
 
-			sendMessage(chatId, "Hi, " + firstName + "! You have successfully registered.");
+			sendMessage(chatId, "👋 Hi, " + firstName + "! You have successfully registered.");
 		} else {
 
 			// Existing client: check if chatId needs updating (e.g., user started bot in a

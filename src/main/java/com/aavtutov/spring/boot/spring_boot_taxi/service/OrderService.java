@@ -67,7 +67,7 @@ public interface OrderService {
 	OrderEntity acceptOrder(Long orderId, Long driverId);
 
 	/**
-	 * Marks the trip as started, typically when the driver has picked up the
+	 * Marks the trip as started, typically when the driver has arrived to the
 	 * client.
 	 *
 	 * <p>

@@ -139,11 +139,11 @@ public class OrderServiceImpl implements OrderService {
 		order.setAcceptedAt(Instant.now());
 
 		OrderEntity savedOrder = orderRepository.save(order);
-
+		
 		// Rationale: Notify the client via Telegram about the acceptance.
 		if (order.getDriver().getTelegramChatId() != null) {
 			String clientChatId = order.getClient().getTelegramChatId();
-			String message = "🚕 Your driver is already on the way!";
+			String message = "🚕💨 Your driver is already on the way!";
 			telegramBotService.sendMessage(clientChatId, message);
 		}
 		return savedOrder;
@@ -159,7 +159,16 @@ public class OrderServiceImpl implements OrderService {
 
 		order.setStatus(OrderStatus.IN_PROGRESS);
 		order.setStartedAt(Instant.now());
-		return orderRepository.save(order);
+		
+		OrderEntity savedOrder = orderRepository.save(order);
+		// Rationale: Notify the client via Telegram about the arriving.
+		
+		if (order.getDriver().getTelegramChatId() != null) {
+			String clientChatId = order.getClient().getTelegramChatId();
+			String message = "👋 Your driver has arrived!";
+			telegramBotService.sendMessage(clientChatId, message);
+		}
+		return savedOrder;
 	}
 
 	@Transactional

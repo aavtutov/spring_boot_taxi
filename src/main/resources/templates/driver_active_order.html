@@ -119,7 +119,7 @@
     </div>
 
     <div id="update-menu" class="update-menu hidden">
-        <button id="btn-client-in-car" class="btn-menu hidden">Client in the car</button>
+        <button id="btn-driver-arrived" class="btn-menu hidden">I've arrived</button>
         <button id="btn-complete-trip" class="btn-menu">Complete trip</button>
         <button id="btn-cancel-trip" class="btn-menu">Cancel trip</button>
     </div>
@@ -337,14 +337,13 @@
                     });
 
                     if (response.status === 404 || response.status === 204) {
-                        // Заказ вообще исчез
                         handleOrderTerminated('Order no longer exists.');
                         return;
                     }
 
                     const updatedOrder = await response.json();
 
-                    // Если статус стал CANCELED или COMPLETED не через текущий экран
+                    // If CANCELED or COMPLETED elsewhere
                     const terminalStatuses = ['CANCELED', 'COMPLETED'];
                     if (terminalStatuses.includes(updatedOrder.status) && updatedOrder.status !== order.status) {
                         let message = 'Order was cancelled by the client.';
@@ -404,18 +403,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             startHeartbeat();
             startOrderStatusPolling();
-            const btnClientInCar = document.getElementById('btn-client-in-car');
+            const btnDriverArrived = document.getElementById('btn-driver-arrived');
             const btnComplete = document.getElementById('btn-complete-trip');
             const btnCancel = document.getElementById('btn-cancel-trip');
 
-            btnClientInCar?.classList.add('hidden');
+            btnDriverArrived?.classList.add('hidden');
             btnComplete?.classList.add('hidden');
             
             // 1. Order Accepted - Waiting for Passenger
             if (order.status === 'ACCEPTED') {
-                btnClientInCar?.classList.remove('hidden');
-                btnClientInCar?.addEventListener('click', () => {
-                    tg.showConfirm('Is the passenger in the car and ready to go?', (ok) => {
+            	btnDriverArrived?.classList.remove('hidden');
+            	btnDriverArrived?.addEventListener('click', () => {
+                    tg.showConfirm('Confirm arrival?', (ok) => {
                         if (ok) updateOrderStatus('START_TRIP');
                     });
                 });

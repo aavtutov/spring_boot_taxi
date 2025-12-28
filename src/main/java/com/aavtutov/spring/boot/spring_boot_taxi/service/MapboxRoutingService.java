@@ -45,5 +45,4 @@ public interface MapboxRoutingService {
 	 *         the trip.
 	 */
 	Route getRoute(BigDecimal startLng, BigDecimal startLat, BigDecimal endLng, BigDecimal endLat);
-
 }

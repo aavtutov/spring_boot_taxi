@@ -55,27 +55,7 @@ public class MapboxRoutingServiceImpl implements MapboxRoutingService {
 	 */
 	@Override
 	public double getDistance(BigDecimal startLng, BigDecimal startLat, BigDecimal endLng, BigDecimal endLat) {
-
-		// Rationale: Construct the Mapbox API URL using the driving profile and
-		// coordinates.
-		String url = String.format("https://api.mapbox.com/directions/v5/mapbox/driving/%f,%f;%f,%f?access_token=%s",
-				startLng.doubleValue(), startLat.doubleValue(), endLng.doubleValue(), endLat.doubleValue(),
-				mapboxAccessToken);
-
-		// Rationale: Execute the reactive call and block to obtain the response
-		// synchronously.
-		MapboxResponse response = webClient.get().uri(url).retrieve().bodyToMono(MapboxResponse.class).block();
-
-		if (response != null && !response.routes.isEmpty()) {
-
-			// Rationale: Distance is returned in meters. We return the raw value from the
-			// first (best) route.
-			return response.routes.get(0).distance;
-		}
-
-		// Note: The original exception message is in Russian; replacing with an English
-		// equivalent.
-		throw new MapboxServiceException("Не удалось получить расстояние от Mapbox API");
+		return getRoute(startLng, startLat, endLng, endLat).getDistance();
 	}
 
 	/**
@@ -97,13 +77,17 @@ public class MapboxRoutingServiceImpl implements MapboxRoutingService {
 
 		// Rationale: Construct the Mapbox API URL using the driving profile and
 		// coordinates.
-		String url = String.format("https://api.mapbox.com/directions/v5/mapbox/driving/%f,%f;%f,%f?access_token=%s",
+		String url = String.format("https://api.mapbox.com/directions/v5/mapbox/driving-traffic/%f,%f;%f,%f?access_token=%s",
 				startLng.doubleValue(), startLat.doubleValue(), endLng.doubleValue(), endLat.doubleValue(),
 				mapboxAccessToken);
 
 		// Rationale: Execute the reactive call and block to obtain the response
 		// synchronously.
-		MapboxResponse response = webClient.get().uri(url).retrieve().bodyToMono(MapboxResponse.class).block();
+		MapboxResponse response = webClient.get()
+				.uri(url)
+				.retrieve()
+				.bodyToMono(MapboxResponse.class)
+				.block();
 
 		if (response != null && !response.routes.isEmpty()) {
 			return response.routes.get(0);
