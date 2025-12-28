@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
@@ -145,7 +146,8 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 	 * @param chatId      The ID of the chat to send the message to.
 	 * @param messageText The text content of the message.
 	 */
-	private void sendMessage(String chatId, String messageText) {
+	@Async
+	void sendMessage(String chatId, String messageText) {
 		SendMessage message = SendMessage.builder().text(messageText).chatId(chatId).build();
 
 		try {
