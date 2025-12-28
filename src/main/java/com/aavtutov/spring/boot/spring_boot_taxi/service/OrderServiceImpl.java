@@ -200,7 +200,7 @@ public class OrderServiceImpl implements OrderService {
 		// Rationale: Notify the client about the completion and final price.
 		if (order.getDriver().getTelegramChatId() != null) {
 			String clientChatId = order.getClient().getTelegramChatId();
-			String message = String.format("🏁 Your ride was completed!"
+			String message = String.format("🎉 Your ride was completed!"
 					+ "\n\n-From: %s"
 					+ "\n-To: %s"
 					+ "\n\nTotal Price: %.2f %s",
