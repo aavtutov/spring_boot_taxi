@@ -563,7 +563,6 @@ function lockFormInteractions() {
     if (geoBtn) {
         geoBtn.disabled = true;
         geoBtn.style.opacity = '0.5';
-        geoBtn.style.pointerEvents = 'none';
     }
 	
 	updateIconsOpacity(null);
