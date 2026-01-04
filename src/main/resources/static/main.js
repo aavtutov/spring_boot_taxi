@@ -558,6 +558,14 @@ function lockFormInteractions() {
 		const btn = document.getElementById(id);
 		if (btn) btn.disabled = true;
 	});
+	
+	const geoBtn = document.getElementById('geo-btn');
+    if (geoBtn) {
+        geoBtn.disabled = true;
+        geoBtn.style.opacity = '0.5';
+        geoBtn.style.pointerEvents = 'none';
+    }
+	
 	updateIconsOpacity(null);
 }
 
@@ -644,6 +652,13 @@ function formInactive(shouldReset = true) {
             el.classList.remove('readonly');
         }
     });
+	
+	const geoBtn = document.getElementById('geo-btn');
+    if (geoBtn) {
+        geoBtn.disabled = false;
+        geoBtn.style.opacity = '1';
+        geoBtn.style.pointerEvents = 'auto';
+    }
 
     stopPollingOrderStatus();
 
