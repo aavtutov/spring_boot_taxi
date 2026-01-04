@@ -886,6 +886,8 @@ async function drawRouteOnMap(start, end) {
 }
 
 function useCurrentLocation() {
+	if (formLocked) return;
+	
 	if (!navigator.geolocation) {
 	        tg.showAlert("Geolocation is not supported by your device.");
 	        return;
