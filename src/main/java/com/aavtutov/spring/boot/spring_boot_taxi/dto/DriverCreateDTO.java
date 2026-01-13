@@ -5,23 +5,15 @@ import java.util.stream.Collectors;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 /**
- * Data Transfer Object (DTO) used to collect the necessary vehicle and document
- * information for a user registering as a driver.
- *
- * <p>
- * This object is typically used in conjunction with the user's existing client
- * identity (Telegram ID).
- * </p>
+ * DTO for driver registration, including vehicle details and document references.
  */
-@Getter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class DriverCreateDTO {
 
 	@NotBlank(message = "Driver create: Car model is required")
@@ -39,7 +31,8 @@ public class DriverCreateDTO {
 	@NotBlank(message = "Driver create: Car registration photo/URL is required")
 	private String carRegistrationUrl;
 	
-	private String normalize(String value) {
+	// Helper for title-casing (e.g., "toyota camry" -> "Toyota Camry")
+	private String capitalize(String value) {
 		if (value == null || value.isBlank()) {
 			return value;
 		}
@@ -49,16 +42,22 @@ public class DriverCreateDTO {
 				.collect(Collectors.joining(" "));
 	}
 	
+	/** Custom setters for data normalization before persistence.
+     * This ensures consistent formatting in the database.
+     */
+	
+	// TODO: Move normalization to Service
+	
 	public void setLicensePlate(String licensePlate) {
 		this.licensePlate = (licensePlate == null) ? null : licensePlate.trim().replaceAll("\\s+", " ").toUpperCase();
 	}
 
     public void setCarModel(String carModel) {
-        this.carModel = normalize(carModel);
+        this.carModel = capitalize(carModel);
     }
 
     public void setCarColor(String carColor) {
-        this.carColor = normalize(carColor);
+        this.carColor = capitalize(carColor);
     }
     
     public void setDriverLicenseUrl(String driverLicenseUrl) {
