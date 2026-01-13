@@ -1,8 +1,5 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.bot;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -20,15 +17,13 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.ClientService;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * A dedicated consumer component for processing incoming Telegram
- * {@link Update}s in a single-threaded manner.
- *
- * <p>
- * Handles user registration, client updates, and sends the initial message with
- * the WebApp button.
- * </p>
+ * Service for processing incoming Telegram updates and managing user registration.
+ * Provides the main entry point for the taxi booking WebApp interaction.
  */
+@Slf4j
 @Component
 public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 
@@ -36,129 +31,76 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 	private final TelegramClient telegramClient;
 	private final String webAppUrl;
 
-	/**
-	 * Constructs the UpdateConsumer, injecting necessary dependencies and
-	 * configuration values.
-	 *
-	 * @param clientService The service layer for managing client data in the
-	 *                      database.
-	 * @param botToken      The bot's token, used to initialize the TelegramClient.
-	 * @param webAppUrl     The external URL for the Telegram WebApp.
-	 */
 	public UpdateConsumer(ClientService clientService, @Value("${telegram.bot.token}") String botToken,
 			@Value("${web.app.url}") String webAppUrl) {
 		this.clientService = clientService;
-
-		// Rationale: Using OkHttp client implementation for executing API calls.
 		this.telegramClient = new OkHttpTelegramClient(botToken);
 		this.webAppUrl = webAppUrl;
 	}
 
-	/**
-	 * The main entry point for processing an incoming Telegram update.
-	 *
-	 * <p>
-	 * Registers a new client or updates an existing client's chat ID, then sends
-	 * the WebApp button.
-	 * </p>
-	 *
-	 * @param update The incoming {@link Update} object from the Telegram API.
-	 */
 	@Override
 	public void consume(Update update) {
-
-		// Only process updates that contain a message (i.e., not inline queries, etc.)
-		if (!update.hasMessage())
-			return;
+		if (!update.hasMessage()) return;
 
 		Long telegramId = update.getMessage().getFrom().getId();
 		String firstName = update.getMessage().getFrom().getFirstName();
 		String chatId = update.getMessage().getChatId().toString();
 
-		Optional<ClientEntity> optionalClient = clientService.findClientOptionalByTelegramId(telegramId);
-
-		if (optionalClient.isEmpty()) {
-
-			// Register new client in the database
-			ClientEntity newClient = new ClientEntity();
-			newClient.setTelegramId(telegramId);
-			newClient.setFullName(firstName);
-			newClient.setTelegramChatId(chatId);
-			clientService.registerClient(newClient);
-
-			sendMessage(chatId, "👋 Hi, " + firstName + "! You have successfully registered.");
-		} else {
-
-			// Existing client: check if chatId needs updating (e.g., user started bot in a
-			// new chat/group)
-			ClientEntity client = optionalClient.get();
-
-			if (!chatId.equals(client.getTelegramChatId())) {
-				client.setTelegramChatId(chatId);
-				clientService.updateClient(client);
-			}
-		}
-
-		// Always send the WebApp button after the client is registered/updated
+		processUserRegistration(telegramId, firstName, chatId);
 		sendWebAppButton(chatId,
 				"<b>Press the button to book a ride.</b>\n" + "Start using taxi right in your Telegram.");
-
 	}
 
-	/**
-	 * Sends a message with an Inline Keyboard containing the WebApp button.
-	 *
-	 * @param chatId      The ID of the chat to send the message to.
-	 * @param messageText The text content of the message (supports HTML parse
-	 *                    mode).
-	 */
+	private void processUserRegistration(Long telegramId, String firstName, String chatId) {
+        clientService.findClientOptionalByTelegramId(telegramId)
+            .ifPresentOrElse(
+                client -> updateChatIdIfNeeded(client, chatId),
+                () -> registerNewClient(telegramId, firstName, chatId)
+            );
+    }
+	
+	private void registerNewClient(Long telegramId, String firstName, String chatId) {
+        ClientEntity newClient = new ClientEntity();
+        newClient.setTelegramId(telegramId);
+        newClient.setFullName(firstName);
+        newClient.setTelegramChatId(chatId);
+        clientService.registerClient(newClient);
+        sendMessage(chatId, "👋 Hi, " + firstName + "! You have successfully registered.");
+    }
+	
+	private void updateChatIdIfNeeded(ClientEntity client, String chatId) {
+        if (!chatId.equals(client.getTelegramChatId())) {
+            client.setTelegramChatId(chatId);
+            clientService.updateClient(client);
+        }
+    }
+	
 	private void sendWebAppButton(String chatId, String messageText) {
-
-		SendMessage message = new SendMessage(chatId, messageText);
-		message.setParseMode("HTML");
-
-		// WebApp link configuration
 		WebAppInfo webAppInfo = WebAppInfo.builder().url(webAppUrl).build();
+		InlineKeyboardButton button = InlineKeyboardButton.builder().text("Open Application").webApp(webAppInfo).build();
+		InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().keyboardRow(new InlineKeyboardRow(button)).build();
 
-		// Build the Inline Keyboard Button linking to the WebApp
-		InlineKeyboardButton button = InlineKeyboardButton.builder().text("Open Hop in").webApp(webAppInfo).build();
-
-		// Create the keyboard structure
-		InlineKeyboardRow row = new InlineKeyboardRow(List.of(button));
-		InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().keyboard(List.of(row)).build();
-
-		message.setReplyMarkup(keyboard);
-
-		try {
-			telegramClient.execute(message);
-		} catch (TelegramApiException e) {
-
-			// Log the exception rather than just printing the stack trace in a production
-			// application.
-			e.printStackTrace();
-		}
-
+		executeMessage(SendMessage.builder()
+                .chatId(chatId)
+                .text(messageText)
+                .parseMode("HTML")
+                .replyMarkup(keyboard)
+                .build());
 	}
 
-	/**
-	 * Helper method to send a simple text message to a specific chat ID.
-	 *
-	 * @param chatId      The ID of the chat to send the message to.
-	 * @param messageText The text content of the message.
-	 */
 	@Async
 	void sendMessage(String chatId, String messageText) {
-		SendMessage message = SendMessage.builder().text(messageText).chatId(chatId).build();
-
-		try {
-			telegramClient.execute(message);
-		} catch (TelegramApiException e) {
-
-			// Log the exception rather than just printing the stack trace in a production
-			// application.
-			e.printStackTrace();
-		}
-
+		executeMessage(SendMessage.builder()
+				.text(messageText)
+				.chatId(chatId)
+				.build());
 	}
-
+	
+	private void executeMessage(SendMessage message) {
+        try {
+            telegramClient.execute(message);
+        } catch (TelegramApiException e) {
+        	log.error("Failed to execute Telegram API message for chatId: {}", message.getChatId(), e);
+        }
+    }
 }

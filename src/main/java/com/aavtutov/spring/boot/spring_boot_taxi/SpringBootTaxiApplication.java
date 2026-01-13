@@ -6,8 +6,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableScheduling // Enables Spring's scheduled task execution capability (e.g., methods annotated
-					// with @Scheduled).
+@EnableScheduling
 @EnableAsync(proxyTargetClass = true)
 public class SpringBootTaxiApplication {
 
