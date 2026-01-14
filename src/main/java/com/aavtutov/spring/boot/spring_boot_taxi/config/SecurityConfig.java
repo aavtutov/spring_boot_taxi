@@ -37,10 +37,11 @@ public class SecurityConfig {
 
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.csrf(AbstractHttpConfigurer::disable)
+		http
+		.csrf(AbstractHttpConfigurer::disable) // Disable CSRF for REST API
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/*/admin/**").hasRole("ADMIN")
-						.requestMatchers("/api/**").permitAll()
+						.requestMatchers("/api/*/admin/**").hasRole("ADMIN")	// Admin-only routes
+						.requestMatchers("/api/**").permitAll()					// WebApp routes (validated internally)
 						.anyRequest().permitAll()
 				)
 				.httpBasic(httpBasic -> {})
