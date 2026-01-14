@@ -24,111 +24,57 @@ import lombok.Data;
 public class MapboxRoutingServiceImpl implements MapboxRoutingService {
 
 	private final WebClient webClient;
-	private String mapboxAccessToken;
+	private final String mapboxAccessToken;
+	
+	public MapboxRoutingServiceImpl(
+            WebClient webClient, 
+            @Value("${mapbox.access.token}") String mapboxAccessToken) {
+        this.webClient = webClient;
+        this.mapboxAccessToken = mapboxAccessToken;
+    }
 
-	/**
-	 * Constructs the service, injecting the required Mapbox access token and the
-	 * pre-configured WebClient instance.
-	 *
-	 * @param mapboxAccessToken The security token for the Mapbox API, injected via
-	 *                          Spring Value.
-	 * @param webClient         The reactive HTTP client used for external service
-	 *                          calls.
-	 */
-	public MapboxRoutingServiceImpl(@Value("${mapbox.access.token}") String mapboxAccessToken, WebClient webClient) {
-		this.mapboxAccessToken = mapboxAccessToken;
-		this.webClient = webClient;
-	}
-
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Queries the Mapbox Directions API for the optimal route distance.
-	 *             </p>
-	 *
-	 * @param startLng The longitude of the starting point.
-	 * @param startLat The latitude of the starting point.
-	 * @param endLng   The longitude of the destination point.
-	 * @param endLat   The latitude of the destination point.
-	 * @return The distance in meters (as returned by Mapbox API, typically).
-	 * @throws MapboxServiceException if the API call fails or returns no routes.
-	 */
 	@Override
-	public double getDistance(BigDecimal startLng, BigDecimal startLat, BigDecimal endLng, BigDecimal endLat) {
+	public double getDistance(
+			BigDecimal startLng, BigDecimal startLat,
+			BigDecimal endLng, BigDecimal endLat) {
 		return getRoute(startLng, startLat, endLng, endLat).getDistance();
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Queries the Mapbox Directions API for the optimal route,
-	 *             returning the distance and duration.
-	 *             </p>
-	 *
-	 * @param startLng The longitude of the starting point.
-	 * @param startLat The latitude of the starting point.
-	 * @param endLng   The longitude of the destination point.
-	 * @param endLat   The latitude of the destination point.
-	 * @return The {@link Route} object containing distance and duration metrics.
-	 * @throws MapboxServiceException if the API call fails or returns no routes.
-	 */
 	@Override
-	public Route getRoute(BigDecimal startLng, BigDecimal startLat, BigDecimal endLng, BigDecimal endLat) {
-
-		// Rationale: Construct the Mapbox API URL using the driving profile and
-		// coordinates.
-		String url = String.format("https://api.mapbox.com/directions/v5/mapbox/driving-traffic/%f,%f;%f,%f?access_token=%s",
-				startLng.doubleValue(), startLat.doubleValue(), endLng.doubleValue(), endLat.doubleValue(),
-				mapboxAccessToken);
-
-		// Rationale: Execute the reactive call and block to obtain the response
-		// synchronously.
+	public Route getRoute(
+			BigDecimal startLng, BigDecimal startLat,
+			BigDecimal endLng, BigDecimal endLat) {
+		
+		String coordinates = String.format("%f,%f;%f,%f", startLng, startLat, endLng, endLat);
+		
 		MapboxResponse response = webClient.get()
-				.uri(url)
+				.uri(uriBuilder -> uriBuilder
+                        .scheme("https")
+                        .host("api.mapbox.com")
+                        .path("/directions/v5/mapbox/driving-traffic/{coords}")
+                        .queryParam("access_token", mapboxAccessToken)
+                        .build(coordinates))
 				.retrieve()
 				.bodyToMono(MapboxResponse.class)
 				.block();
 
-		if (response != null && !response.routes.isEmpty()) {
-			return response.routes.get(0);
-		}
+		if (response == null || response.getRoutes().isEmpty()) {
+            throw new MapboxServiceException("No routes found from Mapbox API");
+        }
 
-		throw new MapboxServiceException("Failed to retrieve route from Mapbox API");
+		return response.routes.get(0);
 	}
 
-	// --- Inner DTOs for Mapbox Response Deserialization ---
+	// Inner DTOs
 
-	/**
-	 * Data Transfer Object (DTO) representing the top-level response structure from
-	 * the Mapbox Directions API.
-	 */
 	@Data
 	public static class MapboxResponse {
-		/**
-		 * A list of possible routes. We typically use the first route returned.
-		 */
 		private List<Route> routes;
 	}
 
-	/**
-	 * DTO representing a single route object within the Mapbox response.
-	 *
-	 * <p>
-	 * This class is exposed through the {@link MapboxRoutingService#getRoute}
-	 * method.
-	 * </p>
-	 */
 	@Data
 	public static class Route {
-		/**
-		 * The distance of the route in meters.
-		 */
-		private double distance;
-
-		/**
-		 * The estimated duration of the route in seconds.
-		 */
-		private double duration;
+		private double distance; // meters
+		private double duration; // seconds
 	}
-
 }
