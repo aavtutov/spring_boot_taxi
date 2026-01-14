@@ -14,8 +14,11 @@ import com.aavtutov.spring.boot.spring_boot_taxi.service.FareCalculator;
 @Configuration
 public class FareCalculatorConfig {
 
-    @Value("${fare.calculation.strategy}")
-    private String strategy;
+	private final String strategy;
+	
+	public FareCalculatorConfig(@Value("${fare.calculation.strategy}") String strategy) {
+        this.strategy = strategy;
+    }
     
     @Bean
     FareCalculator fareCalculator(ApplicationContext context) {
