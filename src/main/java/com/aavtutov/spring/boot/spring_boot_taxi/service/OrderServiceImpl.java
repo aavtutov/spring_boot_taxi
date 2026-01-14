@@ -221,7 +221,7 @@ public class OrderServiceImpl implements OrderService {
     }
 	
 	private void notifyDriver(OrderEntity order, String message) {
-        Optional.ofNullable(order.getClient().getTelegramChatId())
+        Optional.ofNullable(order.getDriver().getTelegramChatId())
                 .ifPresent(chatId -> telegramBotService.sendMessage(chatId, message));
     }
 	
