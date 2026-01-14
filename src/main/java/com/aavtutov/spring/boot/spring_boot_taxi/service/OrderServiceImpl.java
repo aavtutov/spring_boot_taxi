@@ -221,7 +221,8 @@ public class OrderServiceImpl implements OrderService {
     }
 	
 	private void notifyDriver(OrderEntity order, String message) {
-        Optional.ofNullable(order.getDriver().getTelegramChatId())
+        Optional.ofNullable(order.getDriver()) // if driver not assigned yet
+        		.map(DriverEntity::getTelegramChatId)
                 .ifPresent(chatId -> telegramBotService.sendMessage(chatId, message));
     }
 	
