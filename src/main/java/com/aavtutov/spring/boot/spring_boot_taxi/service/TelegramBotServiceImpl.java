@@ -10,70 +10,31 @@ import org.springframework.web.reactive.function.client.WebClient;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
-/**
- * Concrete implementation of the {@link TelegramBotService} responsible for
- * sending messages via the official Telegram Bot API.
- *
- * <p>
- * It utilizes Spring's reactive {@link WebClient} for non-blocking HTTP
- * communication and handles configuration via a Telegram bot token.
- * </p>
- */
 @Slf4j
 @Service
 public class TelegramBotServiceImpl implements TelegramBotService {
 
-	/**
-	 * The unique authentication token for the Telegram Bot, injected from
-	 * application properties.
-	 */
-	@Value("${telegram.bot.token}")
-	private String botToken;
-
 	private final WebClient webClient;
+	private final String botToken;
 
-	/**
-	 * Constructs the service, configuring the {@link WebClient} to use the base URL
-	 * of the Telegram API.
-	 *
-	 * @param webClientBuilder A builder supplied by Spring for creating the
-	 *                         WebClient instance.
-	 */
-	public TelegramBotServiceImpl(WebClient.Builder webClientBuilder) {
+	public TelegramBotServiceImpl(
+			WebClient.Builder webClientBuilder,
+			@Value("${telegram.bot.token}") String botToken) {
 		this.webClient = webClientBuilder.baseUrl("https://api.telegram.org").build();
+		this.botToken = botToken;
 	}
 
-	/**
-	 * @inheritDoc
-	 *             <p>
-	 *             Sends an asynchronous POST request to the Telegram API's
-	 *             {@code sendMessage} endpoint. The method returns immediately, and
-	 *             the message sending happens non-blockingly in the background.
-	 *             </p>
-	 *
-	 * @param chatId  The recipient's unique Telegram Chat ID.
-	 * @param message The text content of the message.
-	 */
 	public void sendMessage(String chatId, String message) {
 		String urlPath = String.format("/bot%s/sendMessage", botToken);
 
 		webClient.post()
 				.uri(urlPath)
-
-				// Rationale: The Telegram API expects 'chat_id' and 'text' as request body
-				// parameters.
 				.bodyValue(Map.of("chat_id", chatId, "text", message))
 				.retrieve()
 				.bodyToMono(String.class)
 				.timeout(Duration.ofSeconds(5))
-				// Rationale: Handle any errors during the network call or API response.
-				// Errors are logged but not re-thrown to prevent blocking the calling thread.
-				.doOnError(error -> {
-		            log.error("Telegram API error [chatId: {}]: {}", chatId, error.getMessage());
-		        })
+				.doOnError(error -> {log.error("Telegram API error [chatId: {}]: {}", chatId, error.getMessage());})
 				.onErrorResume(e -> Mono.empty())
-				// Rationale: The .subscribe() call executes the reactive pipeline
-				// asynchronously.
 				.subscribe();
 	}
 }
