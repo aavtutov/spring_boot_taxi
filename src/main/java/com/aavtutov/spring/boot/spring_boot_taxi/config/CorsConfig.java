@@ -21,7 +21,7 @@ public class CorsConfig implements WebMvcConfigurer {
 	@Override
 	public void addCorsMappings(CorsRegistry registry) {
 		registry.addMapping("/**")
-				.allowedOrigins(webAppUrl)
+				.allowedOrigins("*")
 				.allowedMethods("GET", "POST", "PATCH", "DELETE", "OPTIONS")
 				.allowedHeaders("*")
 				.maxAge(3600);	// Cache pre-flight response for 1 hour
