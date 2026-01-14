@@ -1,13 +1,7 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.entity;
 
 /**
- * Enumeration defining the current status within the lifecycle of an
- * {@link OrderEntity}.
- *
- * <p>
- * This status controls the business rules applied to the order (e.g., who can
- * update it, whether a client can place a new order).
- * </p>
+ * Current status within the lifecycle of an {@link OrderEntity}.
  */
 public enum OrderStatus {
 
@@ -24,7 +18,7 @@ public enum OrderStatus {
 	ACCEPTED,
 
 	/**
-	 * The driver has picked up the client, and the trip is currently in transit to
+	 * The driver has arrived to the client, and the trip is currently in transit to
 	 * the destination.
 	 */
 	IN_PROGRESS,

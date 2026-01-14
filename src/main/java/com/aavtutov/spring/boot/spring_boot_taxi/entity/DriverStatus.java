@@ -1,9 +1,7 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.entity;
 
 /**
- * Enumeration defining the operational status of a driver in the taxi service.
- *
- * <p>This status dictates whether a driver is eligible to receive and fulfill orders.</p>
+ * Operational status of a driver.
  */
 public enum DriverStatus {
 
@@ -15,12 +13,12 @@ public enum DriverStatus {
     
     /**
      * The driver is approved, but not logged in and currently unable to accept orders.
-     * This status is set by the system.
      */
     INACTIVE,
     
     /**
-     * The driver is approved, logged in, and actively ready to receive and accept orders.
+     * The driver is approved, logged in, and actively ready to receive, 
+     * accept and update orders.
      */
     ACTIVE,
     

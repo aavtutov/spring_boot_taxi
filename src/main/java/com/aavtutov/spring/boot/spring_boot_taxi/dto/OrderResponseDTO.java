@@ -27,7 +27,7 @@ public class OrderResponseDTO {
 
 	private OrderStatus status;
 
-	// --- Address and Coordinates ---
+	// Address
 
 	private String startAddress;
 
@@ -41,7 +41,7 @@ public class OrderResponseDTO {
 
 	private BigDecimal endLongitude;
 
-	// --- Route and Price Estimates ---
+	// Route and Price Estimates
 
 	private BigDecimal aproximateDistance;
 
@@ -53,7 +53,7 @@ public class OrderResponseDTO {
 
 	private BigDecimal bonusFare;
 
-	// --- Lifecycle Timestamps ---
+	// Lifecycle Timestamps
 
 	private Instant createdAt;
 
@@ -65,7 +65,7 @@ public class OrderResponseDTO {
 
 	private Instant cancelledAt;
 
-	// --- Final Details ---
+	// Final Details
 
 	private OrderCancellationSource cancellationSource;
 

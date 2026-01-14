@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Persistence entity for taxi drivers.
+ * Persistence entity for drivers.
  * Stores personal data, vehicle specifications, and verification documents.
  */
 @Entity

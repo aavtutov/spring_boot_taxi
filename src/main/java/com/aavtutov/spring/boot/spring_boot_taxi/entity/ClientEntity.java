@@ -17,7 +17,6 @@ import lombok.Setter;
 
 /**
  * Persistence entity representing a client (passenger).
- * Mapped to the 'clients' table and contains Telegram-specific identifiers.
  */
 @Entity
 @Table(name = "clients")
