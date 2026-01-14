@@ -198,6 +198,8 @@ public class OrderServiceImpl implements OrderService {
 	// Private Helpers
 	
 	private void updateRouteDetails(OrderEntity order) {
+		System.out.println("DEBUG: Starting Mapbox request for order...");
+		System.out.println("DEBUG: Start: " + order.getStartLongitude() + ", " + order.getStartLatitude());
 		try {
 			Route route = mapboxRoutingService.getRoute(
 					order.getStartLongitude(),
@@ -210,7 +212,8 @@ public class OrderServiceImpl implements OrderService {
 			order.setAproximateDuration(
 					BigDecimal.valueOf(route.getDuration() / 60.0)
 					.setScale(2, RoundingMode.HALF_UP));
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
+			System.err.println("DEBUG: Mapbox FAILED! Reason: " + e.getMessage());
 			throw new MapboxServiceException("Failed to calculate route");
 		}
 	}
