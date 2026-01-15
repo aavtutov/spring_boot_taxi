@@ -110,15 +110,8 @@ public class OrderController {
 		return orders.stream().map(orderMapper::toResponseDto).toList();
 	}
 	
-
-//	@GetMapping("/{id}/find-suitable-drivers")
-//	public List<DriverResponseDTO> findSuitableDrivers(@PathVariable("id") Long orderId) {
-//		List<DriverEntity> suitableDrivers = orderService.findSuitableDrivers(orderId);
-//		return suitableDrivers.stream().map(driverMapper::toResponseDto).toList();
-//	}
-
 	/**
-     * NOTE: In a production environment, we should verify that the authenticated 
+     * NOTE: In a production environment, you need verify that the authenticated 
      * user (TelegramUserDTO) is either the client or the driver of this order.
      */
 	@GetMapping("/{id}")
