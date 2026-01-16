@@ -52,7 +52,7 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 	}
 
 	private void processUserRegistration(Long telegramId, String firstName, String chatId) {
-        clientService.findClientOptionalByTelegramId(telegramId)
+        clientService.findByTelegramId(telegramId)
             .ifPresentOrElse(
                 client -> updateChatIdIfNeeded(client, chatId),
                 () -> registerNewClient(telegramId, firstName, chatId)
@@ -64,14 +64,14 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
         newClient.setTelegramId(telegramId);
         newClient.setFullName(firstName);
         newClient.setTelegramChatId(chatId);
-        clientService.registerClient(newClient);
+        clientService.save(newClient);
         sendMessage(chatId, "👋 Hi, " + firstName + "! You have successfully registered.");
     }
 	
 	private void updateChatIdIfNeeded(ClientEntity client, String chatId) {
         if (!chatId.equals(client.getTelegramChatId())) {
             client.setTelegramChatId(chatId);
-            clientService.updateClient(client);
+            clientService.save(client);
         }
     }
 	

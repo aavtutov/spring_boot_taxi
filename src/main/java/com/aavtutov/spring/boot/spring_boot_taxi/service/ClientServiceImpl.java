@@ -8,7 +8,6 @@ import com.aavtutov.spring.boot.spring_boot_taxi.dao.ClientRepository;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.ClientMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.telegram.TelegramUserDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
-import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientAlreadyExistsException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -23,15 +22,7 @@ public class ClientServiceImpl implements ClientService {
 
 
 	@Override
-	public ClientEntity updateClient(ClientEntity client) {
-		return clientRepository.save(client);
-	}
-
-	@Override
-	public ClientEntity registerClient(ClientEntity client) {
-		clientRepository.findByTelegramId(client.getTelegramId()).ifPresent(c -> {
-			throw new ClientAlreadyExistsException("Client already exists: " + client.getTelegramId());
-		});
+	public ClientEntity save(ClientEntity client) {
 		return clientRepository.save(client);
 	}
 
@@ -42,7 +33,7 @@ public class ClientServiceImpl implements ClientService {
 	}
 
 	@Override
-	public Optional<ClientEntity> findClientOptionalByTelegramId(Long telegramId) {
+	public Optional<ClientEntity> findByTelegramId(Long telegramId) {
 		return clientRepository.findByTelegramId(telegramId);
 	}
 
@@ -67,6 +58,4 @@ public class ClientServiceImpl implements ClientService {
     private ClientEntity createNewClient(TelegramUserDTO tgUser) {
         return clientRepository.save(clientMapper.toEntity(tgUser));
     }
-	
-	
 }
