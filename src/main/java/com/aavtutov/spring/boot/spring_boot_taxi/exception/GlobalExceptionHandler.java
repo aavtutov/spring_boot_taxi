@@ -4,127 +4,92 @@ import java.time.Instant;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
-	private ResponseEntity<IncorrectData> buildErrorResponse(Exception exception, HttpStatus status,
-			HttpServletRequest request) {
-		IncorrectData data = new IncorrectData();
-		data.setError(exception.getMessage());
-		data.setStatus(status.value());
-		data.setPath(request.getRequestURI());
-		data.setTimestamp(Instant.now());
-		return new ResponseEntity<>(data, status);
-	}
-
-	private ResponseEntity<IncorrectData> buildErrorResponse(String exceptionMessage, HttpStatus status,
-			HttpServletRequest request) {
-		IncorrectData data = new IncorrectData();
-		data.setError(exceptionMessage);
-		data.setStatus(status.value());
-		data.setPath(request.getRequestURI());
-		data.setTimestamp(Instant.now());
-		return new ResponseEntity<>(data, status);
-	}
-
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleClientAlreadyExistsException(ClientAlreadyExistsException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
-	}
-
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleDriverAlreadyExistsException(DriverAlreadyExistsException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
-	}
-	
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleActiveOrderAlreadyExistsException(ActiveOrderAlreadyExistsException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
-	}
-
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleClientNotFoundException(ClientNotFoundException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
-	}
-
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleDriverNotFoundException(DriverNotFoundException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
-	}
-
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleOrderNotFoundException(
-			OrderNotFoundException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
-	}
-	
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleResourceNotFoundException(
-	        ResourceNotFoundException exception, 
-	        HttpServletRequest request) {
-	    return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
-	}
-
+	// 404 Not Found
+    @ExceptionHandler({
+            ClientNotFoundException.class,
+            DriverNotFoundException.class,
+            OrderNotFoundException.class,
+            ResourceNotFoundException.class
+    })
+    public ResponseEntity<IncorrectData> handleNotFound(Exception exception, HttpServletRequest request) {
+        return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
+    }
+    
+    // 409 Conflict
+    @ExceptionHandler({
+            ClientAlreadyExistsException.class,
+            DriverAlreadyExistsException.class,
+            ActiveOrderAlreadyExistsException.class,
+            DriverOfflineException.class,
+            OrderStatusConflictException.class
+    })
+    public ResponseEntity<IncorrectData> handleConflict(Exception exception, HttpServletRequest request) {
+        return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
+    }
+    
+    // 400 Bad Request
+    @ExceptionHandler({
+            IllegalArgumentException.class,
+            MapboxServiceException.class,
+            MethodArgumentTypeMismatchException.class
+    })
+    public ResponseEntity<IncorrectData> handleBadRequest(Exception exception, HttpServletRequest request) {
+        String message = exception instanceof MethodArgumentTypeMismatchException mismatch 
+            ? "Invalid value " + mismatch.getValue() + " for parameter " + mismatch.getName()
+            : exception.getMessage();
+        return buildErrorResponse(message, HttpStatus.BAD_REQUEST, request);
+    }
+    
 	@ExceptionHandler
 	public ResponseEntity<IncorrectData> handleNoContentException(NoContentException exception,
 			HttpServletRequest request) {
 		return buildErrorResponse(exception, HttpStatus.NO_CONTENT, request);
 	}
+    
+    // @Valid
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<IncorrectData> handleValidation(MethodArgumentNotValidException exception, HttpServletRequest request) {
+        String errorMessage = exception.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .findFirst()
+                .orElse("Validation failed");
+        return buildErrorResponse(errorMessage, HttpStatus.BAD_REQUEST, request);
+    }
+    
+    // 500 Internal Server Error
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<IncorrectData> handleAll(Exception exception, HttpServletRequest request) {
+        log.error("Unexpected error occurred at {}: {}", request.getRequestURI(), exception.getMessage(), exception);
+        return buildErrorResponse("An internal server error occurred", HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
 
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleDriverOfflineException(DriverOfflineException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
-	}
-
-	public ResponseEntity<IncorrectData> handleOrderStatusConflictException(DriverOfflineException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
-	}
-
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleTypeMismatchException(MethodArgumentTypeMismatchException exception,
-			HttpServletRequest request) {
-		String errorMessage = "Invalid value " + exception.getValue() + " for parameter " + exception.getName();
-		return buildErrorResponse(errorMessage, HttpStatus.BAD_REQUEST, request);
-	}
-
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleNotValidException(MethodArgumentNotValidException exception,
-			HttpServletRequest request) {
-		String errorMessage = exception.getBindingResult().getFieldErrors().stream()
-				.map(error -> error.getDefaultMessage()).findFirst().orElse("Validation failed");
-		return buildErrorResponse(errorMessage, HttpStatus.BAD_REQUEST, request);
-	}
-
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleIllegalArgumentException(IllegalArgumentException exception,
-			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.BAD_REQUEST, request);
-	}
+	// Helpers
 	
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleMapboxServiceException(MapboxServiceException exception,
+	private ResponseEntity<IncorrectData> buildErrorResponse(Exception exception, HttpStatus status,
 			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.BAD_REQUEST, request);
+		return buildErrorResponse(exception.getMessage(), status, request);
 	}
 
-	@ExceptionHandler
-	public ResponseEntity<IncorrectData> handleException(Exception exception, HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.INTERNAL_SERVER_ERROR, request);
+	private ResponseEntity<IncorrectData> buildErrorResponse(String message, HttpStatus status,
+			HttpServletRequest request) {
+		IncorrectData data = new IncorrectData();
+		data.setError(message);
+		data.setStatus(status.value());
+		data.setPath(request.getRequestURI());
+		data.setTimestamp(Instant.now());
+		return new ResponseEntity<>(data, status);
 	}
-
 }
