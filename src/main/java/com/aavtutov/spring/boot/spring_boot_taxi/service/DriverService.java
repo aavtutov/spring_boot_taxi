@@ -23,14 +23,14 @@ public interface DriverService {
 
 	DriverEntity findDriverByTelegramId(Long telegramId);
 
-	Optional<DriverEntity> findOptionalDriverByTelegramId(Long telegramId);
+	Optional<DriverEntity> findByTelegramId(Long telegramId);
 
 	DriverEntity findDriverById(Long driverId);
 
 	/**
      * Activates the driver and resets the auto-deactivation timer (heartbeat).
      */
-	void activateDriverByHeartbeat(Long telegramId);
+	void activateDriverByHeartbeat(DriverEntity driver);
 
 	/**
      * Manually sets the driver to INACTIVE (off-duty).

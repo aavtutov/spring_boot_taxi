@@ -58,8 +58,7 @@ public class DriverServiceImpl implements DriverService {
 	
 	@Transactional
 	@Override
-	public void activateDriverByHeartbeat(Long telegramId) {
-		DriverEntity driver = findDriverByTelegramIdOrThrow(telegramId);
+	public void activateDriverByHeartbeat(DriverEntity driver) {
 
 		if (driver.getStatus() == DriverStatus.BANNED || driver.getStatus() == DriverStatus.PENDING_APPROVAL) {
 			return;
@@ -69,6 +68,8 @@ public class DriverServiceImpl implements DriverService {
 			driver.setStatus(DriverStatus.ACTIVE);
 			driverRepository.save(driver);
 		}
+		
+		Long telegramId = driver.getTelegramId();
 
 		Optional.ofNullable(scheduledDeactivations.remove(telegramId))
 		.ifPresent(future -> future.cancel(false));
@@ -103,7 +104,7 @@ public class DriverServiceImpl implements DriverService {
 	}
 	
 	@Override
-	public Optional<DriverEntity> findOptionalDriverByTelegramId(Long telegramId) {
+	public Optional<DriverEntity> findByTelegramId(Long telegramId) {
 		return driverRepository.findByTelegramId(telegramId);
 	}	
 	

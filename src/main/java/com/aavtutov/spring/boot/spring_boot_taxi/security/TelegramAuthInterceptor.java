@@ -30,6 +30,10 @@ public class TelegramAuthInterceptor implements HandlerInterceptor {
         }
 		
 		String initData = request.getHeader("X-Telegram-Init-Data");
+		// If header is missing, try to get from Query Parameter
+		if (initData == null || initData.isBlank()) {
+	        initData = request.getParameter("initData");
+	    }
 
         if (initData == null || initData.isBlank()) {
         	log.warn("Unauthorized access attempt: Missing X-Telegram-Init-Data header");
