@@ -25,21 +25,21 @@ public interface OrderService {
 	/**
      * Links a driver to the order and sets status to ACCEPTED.
      */
-	OrderEntity acceptOrder(Long orderId, Long driverId);
+	OrderEntity acceptOrder(Long orderId, Long telegramId);
 
 	/**
      * Transitions the order to IN_PROGRESS (trip start).
      */
-	OrderEntity startTrip(Long orderId, Long driverId);
+	OrderEntity startTrip(Long orderId, Long telegramId);
 
 	/**
      * Finalizes the trip, calculates the final fare, and sets status to COMPLETED.
      */
-	OrderEntity completeOrder(Long orderId, Long driverId);
+	OrderEntity completeOrder(Long orderId, Long telegramId);
 
-	OrderEntity cancelOrderByDriver(Long orderId, Long driverId);
+	OrderEntity cancelOrderByDriver(Long orderId, Long telegramId);
 
-	OrderEntity cancelOrderByClient(Long orderId, Long clientId);
+	OrderEntity cancelOrderByClient(Long orderId, Long telegramId);
 
 	OrderEntity findOrderById(Long orderId);
 

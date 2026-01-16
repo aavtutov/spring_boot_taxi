@@ -20,8 +20,6 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderCancellationSource;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderStatus;
-import com.aavtutov.spring.boot.spring_boot_taxi.exception.ActiveOrderAlreadyExistsException;
-import com.aavtutov.spring.boot.spring_boot_taxi.exception.DriverNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.MapboxServiceException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.NoContentException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.OrderNotFoundException;
@@ -35,6 +33,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+	private final ClientService clientService;
+	private final DriverService driverService;
 	private final OrderRepository orderRepository;
 	private final DriverRepository driverRepository;
 	private final ClientRepository clientRepository;
@@ -44,18 +44,13 @@ public class OrderServiceImpl implements OrderService {
 	private final TelegramBotService telegramBotService;
 	private final FareProperties fareProperties;
 	
-	private static final List<OrderStatus> ACTIVE_ORDER_STATUSES = List.of(OrderStatus.PENDING, OrderStatus.ACCEPTED,
-			OrderStatus.IN_PROGRESS);
-
 	@Transactional
 	@Override
 	public OrderEntity placeOrder(OrderEntity order, Long clientId) {
 		ClientEntity client = clientRepository.findByIdWithLock(clientId)
 	            .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
 
-		if (orderRepository.existsByClientIdAndStatusIn(clientId, ACTIVE_ORDER_STATUSES)) {
-			throw new ActiveOrderAlreadyExistsException("Client id=" + clientId + " already has an active order.");
-		}
+		orderValidator.throwIfClientHasActiveOrder(client.getId());
 		
 		updateRouteDetails(order);
 		order.setClient(client);
@@ -65,15 +60,13 @@ public class OrderServiceImpl implements OrderService {
 	
 	@Transactional
 	@Override
-	public OrderEntity acceptOrder(Long orderId, Long driverId) {
+	public OrderEntity acceptOrder(Long orderId, Long telegramId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
-		DriverEntity driver = findDriverByIdOrThrow(driverId);
+		DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
 
 		orderValidator.throwIfOrderStatusNotAcceptable(order);
-
-		if (orderRepository.existsByDriverIdAndStatusIn(driverId, ACTIVE_ORDER_STATUSES)) {
-			throw new ActiveOrderAlreadyExistsException("Driver id=" + driverId + " already has an active order.");
-		}
+		orderValidator.throwIfDriverNotActive(driver);
+		orderValidator.throwIfDriverHasActiveOrder(driver.getId());
 
 		order.setDriver(driver);
 		order.setStatus(OrderStatus.ACCEPTED);
@@ -85,9 +78,12 @@ public class OrderServiceImpl implements OrderService {
 	
 	@Transactional
 	@Override
-	public OrderEntity completeOrder(Long orderId, Long driverId) {
+	public OrderEntity completeOrder(Long orderId, Long telegramId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
-		orderValidator.throwIfDriverNotAssignedToOrder(order, driverId);
+		DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
+		
+		orderValidator.throwIfDriverNotAssignedToOrder(order, driver.getId());
+		orderValidator.throwIfDriverNotActive(driver);
 		orderValidator.throwIfOrderStatusNotCompletable(order);
 
 		order.setCompletedAt(Instant.now());
@@ -104,9 +100,12 @@ public class OrderServiceImpl implements OrderService {
 	
 	@Transactional
 	@Override
-	public OrderEntity startTrip(Long orderId, Long driverId) {
+	public OrderEntity startTrip(Long orderId, Long telegramId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
-		orderValidator.throwIfDriverNotAssignedToOrder(order, driverId);
+		DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
+		
+		orderValidator.throwIfDriverNotAssignedToOrder(order, driver.getId());
+		orderValidator.throwIfDriverNotActive(driver);
 		orderValidator.throwIfOrderStatusNotStartable(order);
 
 		order.setStatus(OrderStatus.IN_PROGRESS);
@@ -118,9 +117,12 @@ public class OrderServiceImpl implements OrderService {
 	
 	@Transactional
 	@Override
-	public OrderEntity cancelOrderByDriver(Long orderId, Long driverId) {
+	public OrderEntity cancelOrderByDriver(Long orderId, Long telegramId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
-		orderValidator.throwIfDriverNotAssignedToOrder(order, driverId);
+		DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
+		
+		orderValidator.throwIfDriverNotAssignedToOrder(order, driver.getId());
+		orderValidator.throwIfDriverNotActive(driver);
 		orderValidator.throwIfOrderStatusNotCancellable(order);
 
 		order.setStatus(OrderStatus.CANCELED);
@@ -133,9 +135,11 @@ public class OrderServiceImpl implements OrderService {
 	
 	@Transactional
 	@Override
-	public OrderEntity cancelOrderByClient(Long orderId, Long clientId) {
+	public OrderEntity cancelOrderByClient(Long orderId, Long telegramId) {
 		OrderEntity order = findOrderByIdOrThrow(orderId);
-		orderValidator.throwIfClientNotAssignedToOrder(order, clientId);
+		ClientEntity client = clientService.findClientByTelegramId(telegramId);
+		
+		orderValidator.throwIfClientNotAssignedToOrder(order, client.getId());
 		orderValidator.throwIfOrderStatusNotCancellable(order);
 
 		order.setStatus(OrderStatus.CANCELED);
@@ -262,10 +266,5 @@ public class OrderServiceImpl implements OrderService {
 	private OrderEntity findOrderByIdOrThrow(Long orderId) {
 		return orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("Order with id=" + orderId + " not found"));
-	}
-
-	private DriverEntity findDriverByIdOrThrow(Long driverId) {
-		return driverRepository.findById(driverId)
-				.orElseThrow(() -> new DriverNotFoundException("Driver with id=" + driverId + " not found"));
 	}
 }

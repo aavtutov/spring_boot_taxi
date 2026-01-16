@@ -17,11 +17,7 @@ import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.OrderMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.telegram.TelegramUserDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
-import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
-import com.aavtutov.spring.boot.spring_boot_taxi.exception.DriverOfflineException;
-import com.aavtutov.spring.boot.spring_boot_taxi.service.ClientService;
-import com.aavtutov.spring.boot.spring_boot_taxi.service.DriverService;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.OrderService;
 
 import jakarta.validation.Valid;
@@ -36,8 +32,6 @@ import lombok.RequiredArgsConstructor;
 public class OrderController {
 
 	private final OrderService orderService;
-	private final ClientService clientService;
-	private final DriverService driverService;
 	private final OrderMapper orderMapper;
 
 	@PostMapping
@@ -52,37 +46,19 @@ public class OrderController {
 	public OrderResponseDTO updateOrderStatus(@PathVariable("id") Long orderId,
 			@RequestBody @Valid OrderUpdateDTO updateDTO,
 			TelegramUserDTO tgUser) {
+		
+		OrderEntity updatedOrder = switch (updateDTO.getAction()) {
+        case CANCEL_BY_CLIENT -> orderService.cancelOrderByClient(orderId, tgUser.getId());
 
-		OrderEntity updatedOrder = null;
-
-		switch (updateDTO.getAction()) {
-			
-			// Driver Actions
-			case ACCEPT, START_TRIP, COMPLETE, CANCEL_BY_DRIVER -> {
-				DriverEntity driver = driverService.findDriverByTelegramId(tgUser.getId());
-				
-				if (driver.getStatus() != DriverStatus.ACTIVE) {
-					// Driver must be ACTIVE to accept/start/complete an order.
-					throw new DriverOfflineException("Driver is not ACTIVE (current status: " + driver.getStatus() + ")");
-				}
-	
-				updatedOrder = switch (updateDTO.getAction()) {
-				case ACCEPT -> orderService.acceptOrder(orderId, driver.getId());
-				case START_TRIP -> orderService.startTrip(orderId, driver.getId());
-				case COMPLETE -> orderService.completeOrder(orderId, driver.getId());
-				case CANCEL_BY_DRIVER -> orderService.cancelOrderByDriver(orderId, driver.getId());
-				default -> throw new IllegalStateException("Unexpected driver action");
-				};
-			}
-			
-			// Client Actions
-			case CANCEL_BY_CLIENT -> {
-				Long clientId = clientService.findClientByTelegramId(tgUser.getId()).getId();
-				updatedOrder = orderService.cancelOrderByClient(orderId, clientId);
-			}
-			
-		}
-		return orderMapper.toResponseDto(updatedOrder);
+        case ACCEPT -> orderService.acceptOrder(orderId, tgUser.getId());
+        case START_TRIP -> orderService.startTrip(orderId, tgUser.getId());
+        case COMPLETE -> orderService.completeOrder(orderId, tgUser.getId());
+        case CANCEL_BY_DRIVER -> orderService.cancelOrderByDriver(orderId, tgUser.getId());
+        
+        default -> throw new UnsupportedOperationException("Action not supported: " + updateDTO.getAction());
+        };
+    
+        return orderMapper.toResponseDto(updatedOrder);
 	}
 
 
