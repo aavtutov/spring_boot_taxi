@@ -30,6 +30,8 @@ public class TelegramWebAppAuthValidator {
 
 	private final String botToken;
 	private final ObjectMapper objectMapper;
+	
+	private static final String HMAC_SHA256 = "HmacSHA256";
 
 	public TelegramWebAppAuthValidator(
 			@Value("${telegram.bot.token}") String botToken,
@@ -72,7 +74,7 @@ public class TelegramWebAppAuthValidator {
 	
 	private boolean verifyHash(String data, String receivedHash) {
         try {
-            Mac mac = Mac.getInstance("HmacSHA256");
+            Mac mac = Mac.getInstance(HMAC_SHA256);
             mac.init(getSecretKeySpec());
             byte[] calculatedHashBytes = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
             return hex(calculatedHashBytes).equalsIgnoreCase(receivedHash);
@@ -91,9 +93,9 @@ public class TelegramWebAppAuthValidator {
     }
 
 	private SecretKeySpec getSecretKeySpec() throws Exception {
-		Mac mac = Mac.getInstance("HmacSHA256");
-		mac.init(new SecretKeySpec("WebAppData".getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-		return new SecretKeySpec(mac.doFinal(this.botToken.getBytes(StandardCharsets.UTF_8)), "HmacSHA256");
+		Mac mac = Mac.getInstance(HMAC_SHA256);
+		mac.init(new SecretKeySpec("WebAppData".getBytes(StandardCharsets.UTF_8), HMAC_SHA256));
+		return new SecretKeySpec(mac.doFinal(this.botToken.getBytes(StandardCharsets.UTF_8)), HMAC_SHA256);
 	}
 
 	private String hex(byte[] bytes) {
