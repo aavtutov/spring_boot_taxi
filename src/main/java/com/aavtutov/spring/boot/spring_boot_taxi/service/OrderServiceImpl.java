@@ -20,10 +20,10 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderCancellationSource;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderStatus;
+import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.MapboxServiceException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.NoContentException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.OrderNotFoundException;
-import com.aavtutov.spring.boot.spring_boot_taxi.exception.ResourceNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.MapboxRoutingServiceImpl.Route;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.validator.OrderValidator;
 
@@ -48,20 +48,21 @@ public class OrderServiceImpl implements OrderService {
 	@Override
 	public OrderEntity placeOrder(OrderEntity order, Long clientId) {
 		ClientEntity client = clientRepository.findByIdWithLock(clientId)
-	            .orElseThrow(() -> new ResourceNotFoundException("Client not found"));
+	            .orElseThrow(() -> new ClientNotFoundException("Client not found"));
 
 		orderValidator.throwIfClientHasActiveOrder(client.getId());
 		
 		updateRouteDetails(order);
 		order.setClient(client);
-
 		return orderRepository.save(order);
 	}
 	
 	@Transactional
 	@Override
 	public OrderEntity acceptOrder(Long orderId, Long telegramId) {
-		OrderEntity order = findOrderByIdOrThrow(orderId);
+		OrderEntity order = orderRepository.findByIdWithLock(orderId)
+				.orElseThrow(() -> new OrderNotFoundException("Order not found"));
+		
 		DriverEntity driver = driverService.findDriverByTelegramId(telegramId);
 
 		orderValidator.throwIfOrderStatusNotAcceptable(order);
