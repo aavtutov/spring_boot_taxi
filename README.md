@@ -126,6 +126,25 @@ docker-compose up -d db
 	./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 	```
 
+## 🛠 Key Engineering Challenges and Solutions
+
+During development, I focused on solving real-world backend problems rather than just making it "work." Here is how I handled some tricky parts:
+
+### 1. "The Double-Booking" Problem
+* In a taxi app, you can't have two drivers accepting the same order. To prevent this "race condition," I used **Pessimistic Locking** (SELECT FOR UPDATE). It might be a bit slower than other methods, but for a taxi order, data integrity (one order = one driver) is the top priority.
+
+### 2. Database Performance and N+1 Problem
+* I noticed that fetching a list of orders was causing too many database requests because each order wanted to know who the client/driver was.
+    * To fix it, I kept all relationships LAZY by default (to save memory).
+    * For the "Order History" I used **@EntityGraph** to combine driver and client into one SQL JOIN. It made the history page load significantly faster.
+
+### 3. Telegram WebApp Security
+* Since the frontend is a Telegram WebApp I couldn't just trust every request. I built a **Custom Interceptor** that checks the **HMAC-SHA256** signature before the request reaches the controllers.
+* This way the backend only talks to verified users and I keep auth. validation out of controllers.
+
+### 4. Clean Code and Argument Resolvers
+* I noticed that in controller methods I often use same method (ex. `driverService.findDriverByTelegramId(tgUser.getId())`) to get driver or client. So I decided to implement **HandlerMethodArgumentResolver** for client and driver.
+* This way, Client and Driver entities are automatically injected into methods making controllers clean.
 
 ## 📂 Project Structure
 
@@ -137,7 +156,7 @@ docker-compose up -d db
  *  `.gitignore` - Prevents sensitive data from being committed.
 
 
-## 🛠 Tech Stack
+## ⚙️️ Tech Stack
 
 * **Java 17, Spring Boot 3**
 * **Spring Security** (Admin authentication)
