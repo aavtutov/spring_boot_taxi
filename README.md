@@ -49,6 +49,15 @@ Run the following command to build and start all services in detached mode:
 docker-compose up -d --build
 ```
 
+### 4. Performance Optimization
+
+I noticed a slight delay (about 5 seconds) when creating the first order after the app had been idle for a while. To fix this "cold start", I added Spring Boot Actuator and set up a simple system-level cron job on the host server. It pings the `/actuator/health` endpoint every 5 minutes. This keeps the database connection active and ensures the Telegram WebApp responds instantly.
+
+Cron example:
+
+```bash
+*/5 * * * * curl -L -s https://your-domain.com > /dev/null
+```
 
 
 ## ⚙️ Nginx Proxy Manager Setup
