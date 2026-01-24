@@ -56,7 +56,7 @@ I noticed a slight delay (about 5 seconds) when creating the first order after t
 Cron example:
 
 ```bash
-*/5 * * * * curl -L -s https://your-domain.com > /dev/null
+*/5 * * * * curl -L -s https://your-domain.com/actuator/health > /dev/null
 ```
 
 
