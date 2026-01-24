@@ -3,14 +3,11 @@ package com.aavtutov.spring.boot.spring_boot_taxi.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import org.springframework.stereotype.Component;
-
 import com.aavtutov.spring.boot.spring_boot_taxi.config.FareProperties;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
 
 import lombok.RequiredArgsConstructor;
 
-@Component("DISTANCE_AND_TIME")
 @RequiredArgsConstructor
 public class FareCalculatorDistanceAndTime implements FareCalculator {
 

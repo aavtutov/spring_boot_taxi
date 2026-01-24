@@ -1,28 +1,29 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.service.FareCalculator;
+import com.aavtutov.spring.boot.spring_boot_taxi.service.FareCalculatorDistanceAndTime;
+import com.aavtutov.spring.boot.spring_boot_taxi.service.FareCalculatorDistanceOnly;
 
 /**
  * Configuration for dynamic selection of the FareCalculator strategy.
- * The concrete implementation is picked at runtime based on the 'fare.calculation.strategy' property.
+ * The concrete implementation is picked at application startup based on the 'fare.calculation.strategy' property.
  */
 @Configuration
 public class FareCalculatorConfig {
-
-	private final String strategy;
-	
-	public FareCalculatorConfig(@Value("${fare.calculation.strategy}") String strategy) {
-        this.strategy = strategy;
+    
+    @Bean
+    @ConditionalOnProperty(name = "fare.calculation.strategy", havingValue = "DISTANCE_AND_TIME")
+    FareCalculator distanceAndTime(FareProperties fareProperties) {
+        return new FareCalculatorDistanceAndTime(fareProperties);
     }
     
     @Bean
-    FareCalculator fareCalculator(ApplicationContext context) {
-    	// Strategy pattern: lookup the bean by name (e.g., DISTANCE_AND_TIME)
-        return context.getBean(strategy.toUpperCase(), FareCalculator.class);
+    @ConditionalOnProperty(name = "fare.calculation.strategy", havingValue = "DISTANCE_ONLY")
+    FareCalculator distanceOnly(FareProperties fareProperties) {
+        return new FareCalculatorDistanceOnly(fareProperties);
     }
 }
