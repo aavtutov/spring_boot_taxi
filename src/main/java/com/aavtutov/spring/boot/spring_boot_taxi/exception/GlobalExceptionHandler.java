@@ -9,6 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +23,11 @@ public class GlobalExceptionHandler {
             ClientNotFoundException.class,
             DriverNotFoundException.class,
             OrderNotFoundException.class,
-            ResourceNotFoundException.class
+            ResourceNotFoundException.class,
+            NoResourceFoundException.class
     })
     public ResponseEntity<IncorrectData> handleNotFound(Exception exception, HttpServletRequest request) {
+    	log.warn("Resource not found: {} at path: {}", exception.getMessage(), request.getRequestURI());
         return buildErrorResponse(exception, HttpStatus.NOT_FOUND, request);
     }
     
@@ -37,7 +40,8 @@ public class GlobalExceptionHandler {
             OrderStatusConflictException.class
     })
     public ResponseEntity<IncorrectData> handleConflict(Exception exception, HttpServletRequest request) {
-        return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
+    	log.warn("Business conflict: {} at path: {}", exception.getMessage(), request.getRequestURI());
+    	return buildErrorResponse(exception, HttpStatus.CONFLICT, request);
     }
     
     // 400 Bad Request
@@ -50,13 +54,15 @@ public class GlobalExceptionHandler {
         String message = exception instanceof MethodArgumentTypeMismatchException mismatch 
             ? "Invalid value " + mismatch.getValue() + " for parameter " + mismatch.getName()
             : exception.getMessage();
+        log.warn("Bad request at {}: {}", request.getRequestURI(), message);
         return buildErrorResponse(message, HttpStatus.BAD_REQUEST, request);
     }
     
 	@ExceptionHandler
 	public ResponseEntity<IncorrectData> handleNoContentException(NoContentException exception,
 			HttpServletRequest request) {
-		return buildErrorResponse(exception, HttpStatus.NO_CONTENT, request);
+		log.info("No content at {}: {}", request.getRequestURI(), exception.getMessage());
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
     
     // @Valid
@@ -66,6 +72,7 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .findFirst()
                 .orElse("Validation failed");
+        log.info("Validation failed at {}: {}", request.getRequestURI(), errorMessage);
         return buildErrorResponse(errorMessage, HttpStatus.BAD_REQUEST, request);
     }
     
