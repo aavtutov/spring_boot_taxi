@@ -149,7 +149,7 @@ I noticed that in controller methods I often use same method (ex. `driverService
 ### 5. "Cold Starts" on Cloud Free Tiers instance
 I noticed a slight delay (about 5 seconds) when creating the first order after the app had been idle for a while. To fix this "cold start" I set up an external service to ping the `/actuator/health` endpoint every 5 minutes. This generates enough traffic to keep cloud provider from swapping the app out of RAM. 
 
-Additionaly, I extended Actuator by adding a custom `HealthIndicator`, that performs a lightweight query via the `OrderRepository`. This way, it keeps Hibernate warmed up and DB indexes in RAM.
+Additionaly, I extended Actuator by adding a custom `HealthIndicator`, that performs a lightweight queries via 3 repositories (client, driver, order). This way, it keeps Hibernate warmed up and DB indexes in RAM.
 
 ## 📂 Project Structure
 
