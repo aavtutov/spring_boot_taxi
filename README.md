@@ -49,15 +49,8 @@ Run the following command to build and start all services in detached mode:
 docker-compose up -d --build
 ```
 
-### 4. Performance Optimization
+> **Tip: Resource-constrained instances:** If you are deploying this on a free-tier instance (like Oracle Cloud always free or AWS), I highly recommend setting up an external keep-alive service (e.g., UptimeRobot) to ping the health endpoint `/actuator/health` every 5 minutes. This prevents the system from "falling asleep" and ensures a smooth experience for the first user.
 
-I noticed a slight delay (about 5 seconds) when creating the first order after the app had been idle for a while. To fix this "cold start", I added Spring Boot Actuator and set up a simple system-level cron job on the host server. It pings the `/actuator/health` endpoint every 5 minutes. This keeps the database connection active and ensures the Telegram WebApp responds instantly.
-
-Cron example:
-
-```bash
-*/5 * * * * curl -L -s https://your-domain.com/actuator/health > /dev/null
-```
 
 
 ## ⚙️ Nginx Proxy Manager Setup
@@ -140,20 +133,23 @@ docker-compose up -d db
 During development, I focused on solving real-world backend problems rather than just making it "work." Here is how I handled some tricky parts:
 
 ### 1. "The Double-Booking" Problem
-* In a taxi app, you can't have two drivers accepting the same order. To prevent this "race condition," I used **Pessimistic Locking** (SELECT FOR UPDATE). It might be a bit slower than other methods, but for a taxi order, data integrity (one order = one driver) is the top priority.
+In a taxi app, you can't have two drivers accepting the same order. To prevent this "race condition," I used **Pessimistic Locking** (SELECT FOR UPDATE). It might be a bit slower than other methods, but for a taxi order, data integrity (one order = one driver) is the top priority.
 
 ### 2. Database Performance and N+1 Problem
-* I noticed that fetching a list of orders was causing too many database requests because each order wanted to know who the client/driver was.
-    * To fix it, I kept all relationships LAZY by default (to save memory).
-    * For the "Order History" I used **@EntityGraph** to combine driver and client into one SQL JOIN. It made the history page load significantly faster.
+I noticed that fetching a list of orders was causing too many database requests because each order wanted to know who the client/driver was. To fix it, I kept all relationships LAZY by default (to save memory).
+
+For the "Order History" I used **@EntityGraph** to combine driver and client into one SQL JOIN. It made the history page load significantly faster.
 
 ### 3. Telegram WebApp Security
-* Since the frontend is a Telegram WebApp I couldn't just trust every request. I built a **Custom Interceptor** that checks the **HMAC-SHA256** signature before the request reaches the controllers.
-* This way the backend only talks to verified users and I keep auth. validation out of controllers.
+Since the frontend is a Telegram WebApp I couldn't just trust every request. I built a **Custom Interceptor** that checks the **HMAC-SHA256** signature before the request reaches the controllers. This way the backend only talks to verified users and I keep auth. validation out of controllers.
 
 ### 4. Clean Code and Argument Resolvers
-* I noticed that in controller methods I often use same method (ex. `driverService.findDriverByTelegramId(tgUser.getId())`) to get driver or client. So I decided to implement **HandlerMethodArgumentResolver** for client and driver.
-* This way, Client and Driver entities are automatically injected into methods making controllers clean.
+I noticed that in controller methods I often use same method (ex. `driverService.findDriverByTelegramId(tgUser.getId())`) to get driver or client. So I decided to implement **HandlerMethodArgumentResolver** for client and driver. Now, Client and Driver entities are automatically injected into methods making controllers clean.
+
+### 5. "Cold Starts" on Cloud Free Tiers instance
+I noticed a slight delay (about 5 seconds) when creating the first order after the app had been idle for a while. To fix this "cold start" I set up an external service to ping the `/actuator/health` endpoint every 5 minutes. This generates enough traffic to keep cloud provider from swapping the app out of RAM. 
+
+Additionaly, I extended Actuator by adding a custom `HealthIndicator`, that performs a lightweight query via the `OrderRepository`. This way, it keeps Hibernate warmed up and DB indexes in RAM.
 
 ## 📂 Project Structure
 
