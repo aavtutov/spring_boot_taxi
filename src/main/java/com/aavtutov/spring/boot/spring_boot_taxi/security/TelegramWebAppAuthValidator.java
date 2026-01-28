@@ -103,4 +103,20 @@ public class TelegramWebAppAuthValidator {
 		for (byte b : bytes) sb.append(String.format("%02x", b));
 		return sb.toString();
 	}
+	
+	/**
+     * Warms up CPU-intensive libraries (Crypto and JSON) to eliminate "cold start"
+     * latency on the first request.
+     */
+	public void warmup() {
+		try {
+			Mac hmac = Mac.getInstance(HMAC_SHA256);
+			byte[] key = "warmup-key".getBytes();
+			hmac.init(new SecretKeySpec(key, HMAC_SHA256));
+			hmac.doFinal("warmup-data".getBytes());
+			
+			objectMapper.readTree("{}");
+		} catch (Exception ignored) {
+		}
+	}
 }
