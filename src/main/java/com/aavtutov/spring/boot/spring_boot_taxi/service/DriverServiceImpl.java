@@ -7,12 +7,14 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.DriverRepository;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
+import com.aavtutov.spring.boot.spring_boot_taxi.event.DriverStatusChangedEvent;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.DriverAlreadyExistsException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.DriverNotFoundException;
 
@@ -25,7 +27,7 @@ public class DriverServiceImpl implements DriverService {
 
 	private final DriverRepository driverRepository;
 	private final TaskScheduler taskScheduler;
-	private final TelegramBotService telegramBotService;
+	private final ApplicationEventPublisher eventPublisher;
 
 	/**
 	 * Time window after the last heartbeat before the driver is considered offline.
@@ -33,6 +35,7 @@ public class DriverServiceImpl implements DriverService {
 	private static final long DEACTIVATION_DELAY_MS = 60_000;
 	private final Map<Long, ScheduledFuture<?>> scheduledDeactivations = new ConcurrentHashMap<>();
 
+	@Transactional	
 	@Override
 	public DriverEntity registerDriver(DriverEntity driver) {
 		driverRepository.findByTelegramId(driver.getTelegramId()).ifPresent(d -> {
@@ -77,30 +80,29 @@ public class DriverServiceImpl implements DriverService {
 		scheduleDeactivation(telegramId);
 	}	
 	
+	@Transactional
 	@Override
 	public void deactivateDriver(Long telegramId) {
-		driverRepository.findByTelegramId(telegramId).filter(driver -> driver.getStatus() == DriverStatus.ACTIVE)
-				.ifPresent(driver -> {
-					driver.setStatus(DriverStatus.INACTIVE);
-					driverRepository.save(driver);
-				});
-
+		driverRepository.findByTelegramId(telegramId)
+			.filter(driver -> driver.getStatus() == DriverStatus.ACTIVE)
+			.ifPresent(driver -> {
+				driver.setStatus(DriverStatus.INACTIVE);
+			});
 		scheduledDeactivations.remove(telegramId);
 	}
 	
+	@Transactional
 	@Override
 	public void adminUpdateDriverStatus(Long driverId, DriverStatus newStatus) {
 		DriverEntity driver = findDriverByIdOrThrow(driverId);
-
+		
 		if (List.of(DriverStatus.BANNED, DriverStatus.PENDING_APPROVAL, DriverStatus.INACTIVE).contains(newStatus)) {
 			Optional.ofNullable(scheduledDeactivations.remove(driver.getTelegramId()))
 			.ifPresent(future -> future.cancel(false));
 		}
-
-		driver.setStatus(newStatus);
-		driverRepository.save(driver);
 		
-		notifyDriver(driver);
+		driver.setStatus(newStatus);
+		eventPublisher.publishEvent(new DriverStatusChangedEvent(driver));
 	}
 	
 	@Override
@@ -117,16 +119,6 @@ public class DriverServiceImpl implements DriverService {
 
 		scheduledDeactivations.put(telegramId, future);
 	}
-	
-	private void notifyDriver(DriverEntity driver) {
-        String message = switch (driver.getStatus()) {
-            case BANNED -> "Your driver account has been banned!";
-            case ACTIVE, INACTIVE -> "🎉 Your driver account is active now!";
-            case PENDING_APPROVAL -> "Your driver account status has been changed to: PENDING";
-            default -> throw new IllegalStateException("Unexpected status: " + driver.getStatus());
-        };
-        telegramBotService.sendMessage(driver.getTelegramChatId(), message);
-    }
 	
 	private DriverEntity findDriverByIdOrThrow(Long driverId) {
 		return driverRepository.findById(driverId)

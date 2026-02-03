@@ -10,6 +10,7 @@ import com.aavtutov.spring.boot.spring_boot_taxi.dto.telegram.TelegramUserDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientNotFoundException;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 
@@ -43,6 +44,7 @@ public class ClientServiceImpl implements ClientService {
 				.orElseThrow(() -> new ClientNotFoundException("Client not found: " + clientId));
 	}
 
+	@Transactional
 	@Override
 	public ClientEntity getOrCreateClient(TelegramUserDTO tgUser) {
 		return clientRepository.findByTelegramId(tgUser.getId())
