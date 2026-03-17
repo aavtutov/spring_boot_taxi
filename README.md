@@ -74,7 +74,7 @@ Once the containers are running, follow these steps to connect your domain:
 
 	* Select "Request a new SSL Certificate" and enable "Force SSL". This is mandatory for Telegram Web App functionality.
 
-
+> **Security First:** Before proceeding, please note that for production environments, it is recommended to keep port 81 closed. Please check the [🛡 Security Note](https://github.com/aavtutov/spring_boot_taxi#-security-note) below.
 
 ## 🤖 Telegram Bot Configuration
 
@@ -182,8 +182,38 @@ To facilitate the review process, a **Demo Mode** is active when the app runs in
 
 ## 🛡 Security Note
 
+After the initial setup, I highly recommend to close 
 
+* **81** (Nginx Admin)
+* **5432** (Postgres)
+* **8080** (Java App)
 
+in your Firewall to prevent unauthorized access.
 
+### Accessing Nginx Proxy Manager UI via SSH Tunnel
 
-Never share your `.env` file or commit it to version control. The `.gitignore` file included in this project is configured to protect your credentials.
+To manage your Proxy Hosts securely without keeping port 81 open to the internet, use an SSH tunnel from your local machine:
+
+*  **Run this command in your local terminal:**
+
+	```bash
+	ssh -i "path/to/your/key.key" -L 8081:localhost:81 ubuntu@your-server-ip
+	```
+*  **Access Nginx Proxy Manager (NPM) through localhost:**
+
+Now you can access your NPM UI locally, open your browser and go to http://localhost:8081 .
+This way, the NPM is only accessible to you, through an encrypted SSH channel, while remaining "invisible" to the rest of the world.
+
+*  **Same applies to Database (5432) and App (8080):**
+
+Keep these ports closed in your Firewall. Use tunneling for remote management:
+
+	```bash
+	ssh -i "path/to/your/key.key" -L 5433:localhost:5432 -L 8080:localhost:8080 ubuntu@ip
+	```
+
+This ensures that administrative interfaces remain invisible to automated bots and scanners.
+
+### 🔑 Environment credentials
+
+**Important:** Never share your `.env` file or commit it to version control. The `.gitignore` file included in this project is configured to protect your credentials.
