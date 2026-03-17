@@ -16,9 +16,9 @@ You can test the live prototype here: [@hop_in_taxi_bot](https://t.me/hop_in_tax
 Clone the repository and prepare the environment configuration:
 
 ```bash
-    git clone https://github.com/aavtutov/spring_boot_taxi
-    cd spring_boot_taxi
-    cp .env.example .env
+git clone https://github.com/aavtutov/spring_boot_taxi
+cd spring_boot_taxi
+cp .env.example .env
 ```
 
 ### 2. Configure Environment Variables
@@ -111,9 +111,10 @@ docker-compose up -d db
 * Ensure the database connection points to `localhost:5432` (e.g., `jdbc:postgresql://localhost:5432/postgres`).
 * Use **ngrok** to get WebApp URL and create secure tunnel:
 
-	```bash
-	ngrok http 8080
-	```
+```bash
+ngrok http 8080
+```
+
 * Copy the HTTPS URL provided by ngrok (e.g., `https://a1b2-c3d4.ngrok-free.app`) and use as `web.app.url` in your `application-local.properties`.
 * Go to **[@BotFather](https://t.me/BotFather)**, select your bot (for local development consider creating a separate bot) and set the WebApp URL to this ngrok HTTPS URL.
 
@@ -124,9 +125,9 @@ docker-compose up -d db
 * IDE: Set the active Spring profile to local (e.g., via VM options: `-Dspring.profiles.active=local`).
 * CLI:
 
-	```bash
-	./mvnw spring-boot:run -Dspring-boot.run.profiles=local
-	```
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
 
 ## 🛠 Key Engineering Challenges and Solutions
 
@@ -198,9 +199,9 @@ To manage your Proxy Hosts securely without keeping port 81 open to the internet
 
 Run this command in your local terminal:
 
-	```bash
-	ssh -i "path/to/your/key.key" -L 8081:localhost:81 ubuntu@your-server-ip
-	```
+```bash
+ssh -i "path/to/your/key.key" -L 8081:localhost:81 ubuntu@your-server-ip
+```
 
 *  **Access Nginx Proxy Manager (NPM) through localhost**
 
@@ -211,9 +212,9 @@ This way, the NPM is only accessible to you, through an encrypted SSH channel, w
 
 Keep these ports closed in your Firewall. Use tunneling for remote management:
 
-	```bash
-	ssh -i "path/to/your/key.key" -L 5433:localhost:5432 -L 8080:localhost:8080 ubuntu@your-server-ip
-	```
+```bash
+ssh -i "path/to/your/key.key" -L 5433:localhost:5432 -L 8080:localhost:8080 ubuntu@your-server-ip
+```
 
 This ensures that administrative interfaces remain invisible to automated bots and scanners.
 
