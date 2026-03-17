@@ -1,6 +1,7 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -8,6 +9,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +31,6 @@ import com.aavtutov.spring.boot.spring_boot_taxi.security.TelegramAuthIntercepto
 import com.aavtutov.spring.boot.spring_boot_taxi.service.DriverService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @WebMvcTest(DriverController.class)
@@ -61,16 +62,23 @@ public class DriverControllerSecurityTest {
     
     @MockitoBean
     private ClientArgumentResolver clientResolver;
+    
+    private DriverUpdateDTO dto;
+    private static final MediaType JSON = MediaType.APPLICATION_JSON;
+    
+    
+    @BeforeEach
+    void setup() {
+    	dto = new DriverUpdateDTO(DriverStatus.ACTIVE);
+    }
 	
 	@Test
 	@DisplayName("Driver status updated as Anonymous - Should Return 401")
 	void testAdminUpdateDriverStatus_Anonymous_ShouldReturn401() throws Exception {
 
-		DriverUpdateDTO dto = new DriverUpdateDTO(DriverStatus.ACTIVE);
-
-		mockMvc.perform(patch("/api/drivers/admin/16/status")
+		mockMvc.perform(patch("/api/drivers/admin/1/status")
 				.with(anonymous())
-				.contentType(MediaType.APPLICATION_JSON)
+				.contentType(JSON)
 				.content(objectMapper.writeValueAsString(dto)))
 		.andExpect(status().isUnauthorized());
 	}
@@ -80,10 +88,8 @@ public class DriverControllerSecurityTest {
 	@WithMockUser(roles = "USER")
 	void testAdminUpdateDriverStatus_asUser_ShouldReturn403() throws Exception {
 
-		DriverUpdateDTO dto = new DriverUpdateDTO(DriverStatus.ACTIVE);
-
-		mockMvc.perform(patch("/api/drivers/admin/16/status")
-				.contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(patch("/api/drivers/admin/1/status")
+				.contentType(JSON)
 				.content(objectMapper.writeValueAsString(dto)))
 		.andExpect(status().isForbidden());
     }
@@ -95,14 +101,12 @@ public class DriverControllerSecurityTest {
     	
     	when(telegramAuthInterceptor.preHandle(any(), any(), any())).thenReturn(true);
     	
-    	DriverUpdateDTO dto = new DriverUpdateDTO(DriverStatus.ACTIVE);
-    	
-		mockMvc.perform(patch("/api/drivers/admin/16/status")
-				.contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(patch("/api/drivers/admin/1/status")
+				.contentType(JSON)
 				.content(objectMapper.writeValueAsString(dto)))
 		.andExpect(status().isOk());
 		
-		verify(driverService).adminUpdateDriverStatus(any(), any());
+		verify(driverService).adminUpdateDriverStatus(eq(1L), eq(DriverStatus.ACTIVE));
     }
     
     @Test
@@ -114,12 +118,10 @@ public class DriverControllerSecurityTest {
             HttpServletResponse response = invocation.getArgument(1);
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid Telegram Data");
             return false;
-        }).when(telegramAuthInterceptor).preHandle(any(HttpServletRequest.class), any(HttpServletResponse.class), any());
+        }).when(telegramAuthInterceptor).preHandle(any(), any(), any());
     	
-    	DriverUpdateDTO dto = new DriverUpdateDTO(DriverStatus.ACTIVE);
-    	
-		mockMvc.perform(patch("/api/drivers/admin/16/status")
-				.contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(patch("/api/drivers/admin/1/status")
+				.contentType(JSON)
 				.content(objectMapper.writeValueAsString(dto)))
 		.andExpect(status().isUnauthorized());
     }
@@ -131,10 +133,10 @@ public class DriverControllerSecurityTest {
 
 		when(telegramAuthInterceptor.preHandle(any(), any(), any())).thenReturn(true);
 		
-		DriverUpdateDTO dto = new DriverUpdateDTO(null);
+		dto = new DriverUpdateDTO(null);
 
-		mockMvc.perform(patch("/api/drivers/admin/16/status")
-				.contentType(MediaType.APPLICATION_JSON)
+		mockMvc.perform(patch("/api/drivers/admin/1/status")
+				.contentType(JSON)
 				.content(objectMapper.writeValueAsString(dto)))
 		.andExpect(status().isBadRequest());
 	}
