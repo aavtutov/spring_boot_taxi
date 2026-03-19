@@ -1,18 +1,16 @@
 package com.aavtutov.spring.boot.spring_boot_taxi;
 
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+properties = "spring.autoconfigure.exclude=org.telegram.telegrambots.longpolling.starter.TelegramBotStarterConfiguration")
+@ActiveProfiles("test")
 class SpringBootTaxiApplicationTests {
 
-	/*
-	 * The default @SpringBootTest was failing due to missing infrastructure
-	 * dependencies (like the database). I've disabled it for now to focus on the
-	 * DriverController security tests.
-	 */
-
-//	@Test
-//	void contextLoads() {
-//	}
+	@Test
+	void contextLoads() {
+	}
 
 }
