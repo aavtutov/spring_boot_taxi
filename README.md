@@ -3,11 +3,17 @@
 A comprehensive information system for taxi management via Telegram. This project features a Spring Boot backend, a PostgreSQL database, and an Nginx Proxy Manager for secure infrastructure and SSL handling.
 
 ## 🔗 Live Demo
-You can test the live prototype here: [@hop_in_taxi_bot](https://t.me/hop_in_taxi_bot)  
-*The WebApp is integrated directly into the bot interface.*
+Try the Live Demo 👉 [@hop_in_taxi_bot](https://t.me/hop_in_taxi_bot)  
+> **Note:** This is a Telegram Mini App integrated directly into the bot.
+
+### Videos
+
+| Client View | Driver View |
+| :---: | :---: |
+| [![Client View](https://img.youtube.com/vi/7jvFW0S1Sp4/maxresdefault.jpg)](https://youtu.be/7jvFW0S1Sp4) | [![Driver View](https://img.youtube.com/vi/DO5EdLWsiBI/maxresdefault.jpg)](https://youtu.be/DO5EdLWsiBI) |
+| *ordering, price and distance calculation, notifications* | *order acceptance, navigation, completion* |
 
 > **Note:** This is a technical demonstration for educational purposes. No real trips are provided.
-
 
 ## 🚀 Quick Start (Docker)
 
