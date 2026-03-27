@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  app:
+    build: .  
+    container_name: taxi_app
+    restart: always
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: ${DOCKER_APP_MEM_LIMIT}
+    environment:
+      # JVM
+      - JAVA_OPTS=${JAVA_OPTS}
+      # HIKARI
+      - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=${HIKARI_MIN_IDLE}
+      - SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE=${HIKARI_MAX_POOL_SIZE}
+      # DB
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      # Admin
+      - SPRING_SECURITY_USER_NAME=${ADMIN_USERNAME}
+      - SPRING_SECURITY_USER_PASSWORD=${ADMIN_PASSWORD}
+      - SPRING_SECURITY_USER_ROLES=ADMIN
+      # Telegram
+      - TELEGRAM_BOT_USERNAME=${TG_USERNAME_BOT}
+      - TELEGRAM_BOT_TOKEN=${TG_BOT_TOKEN}
+      - WEB_APP_URL=${WEB_APP_URL}
+      # MapBox
+      - MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}
+      # Tariffs
+      - FARE_CALCULATION_STRATEGY=${FARE_CALCULATION_STRATEGY}
+      - FARE_BASE=${FARE_BASE}
+      - FARE_PER_KM=${FARE_PER_KM}
+      - FARE_PER_MIN=${FARE_PER_MIN}
+      - FARE_CURRENCY=${FARE_CURRENCY}
+
+networks:
+  default:
+    name: taxi-network
