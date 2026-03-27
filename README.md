@@ -56,7 +56,7 @@ Run the following command to build and start all services in detached mode:
 docker-compose up -d --build
 ```
 
-> **Tip: Resource-constrained instances:** If you are deploying this on a free-tier instance (like Oracle Cloud always free or AWS), I highly recommend setting up an external keep-alive service (e.g., UptimeRobot) to ping the health endpoint `/actuator/health` every 5 minutes. This prevents the system from "falling asleep" and ensures a smooth experience for the first user.
+> **Tip: Resource-constrained instances:** If you are deploying this on a free-tier instance (like Oracle Cloud always free or AWS), I highly recommend setting up an external keep-alive service (e.g., cron-job,org) to ping the health endpoint `/actuator/health` every 2-5 minutes. This prevents the system from "falling asleep" and ensures a smooth experience for the first user.
 
 ### 4. Demo Architecture
 
