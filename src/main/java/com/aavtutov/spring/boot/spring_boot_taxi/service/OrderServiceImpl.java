@@ -53,7 +53,7 @@ public class OrderServiceImpl implements OrderService {
 	private final FareProperties fareProperties;
 	private final SimpMessagingTemplate simpMessagingTemplate;
 	private final OrderMapper orderMapper;
-	private ApplicationEventPublisher eventPublisher;
+	private final ApplicationEventPublisher eventPublisher;
 	
 	@Transactional
 	@Override
@@ -65,9 +65,10 @@ public class OrderServiceImpl implements OrderService {
 		
 		updateRouteDetails(order);
 		order.setClient(client);
+		OrderEntity savedOrder = orderRepository.save(order);
 		
 		eventPublisher.publishEvent(new OrderUpdateEvent());
-		return order;
+		return savedOrder;
 	}
 	
 	@Transactional
@@ -88,7 +89,7 @@ public class OrderServiceImpl implements OrderService {
 		
 		messageClient(order, "🚕💨 Your driver is on the way!");
 		eventPublisher.publishEvent(new OrderUpdateEvent());
-		return order;
+		return orderRepository.save(order);
 	}
 	
 	@Transactional
@@ -110,7 +111,7 @@ public class OrderServiceImpl implements OrderService {
 		order.setTotalPrice(calculatedPrice.add(order.getBonusFare()));
 		
 		messageClient(order, createCompletionMessage(order));
-		return order;
+		return orderRepository.save(order);
 	}	
 	
 	@Transactional
@@ -127,7 +128,7 @@ public class OrderServiceImpl implements OrderService {
 		order.setStartedAt(Instant.now());
 		
 		messageClient(order, "👋 Your driver has arrived!");
-		return order;
+		return orderRepository.save(order);
 	}	
 	
 	@Transactional
@@ -145,7 +146,7 @@ public class OrderServiceImpl implements OrderService {
 		order.setCancelledAt(Instant.now());
 
 		messageClient(order, createDriverCancellationMessage(order));
-		return order;
+		return orderRepository.save(order);
 	}	
 	
 	@Transactional
@@ -161,8 +162,11 @@ public class OrderServiceImpl implements OrderService {
 		order.setCancellationSource(OrderCancellationSource.CLIENT);
 		order.setCancelledAt(Instant.now());
 
+		OrderEntity savedOrder = orderRepository.save(order);
+		
 		messageDriver(order, createClientCancellationMessage(order));
-		return order;
+		eventPublisher.publishEvent(new OrderUpdateEvent());
+		return savedOrder;
 	}	
 	
 	@Override
@@ -285,9 +289,9 @@ public class OrderServiceImpl implements OrderService {
 	
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	private void handleOrderUpdate(OrderUpdateEvent event) {
+	public void handleOrderUpdate(OrderUpdateEvent event) {
 		List<OrderResponseDTO> pendingOrdersDTOs = 
-				orderRepository.findAllByStatus(OrderStatus.PENDING).stream()
+				orderRepository.findAllByStatusWithClient(OrderStatus.PENDING).stream()
 				.map(orderMapper::toResponseDto)
 				.toList();
 		simpMessagingTemplate.convertAndSend("/topic/available-orders", pendingOrdersDTOs);
