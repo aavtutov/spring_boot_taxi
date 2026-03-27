@@ -58,6 +58,31 @@ docker-compose up -d --build
 
 > **Tip: Resource-constrained instances:** If you are deploying this on a free-tier instance (like Oracle Cloud always free or AWS), I highly recommend setting up an external keep-alive service (e.g., UptimeRobot) to ping the health endpoint `/actuator/health` every 5 minutes. This prevents the system from "falling asleep" and ensures a smooth experience for the first user.
 
+### 4. Demo Architecture
+
+For the live demo version, I chose a secure, distributed deployment architecture using two separate cloud instances, to mimic a production ready environment and split for better resource isolation:
+
+1.  **Java backend** on one cloud instance (1GB RAM)
+2.  **Nginx Proxy Manager (NPM) and Postgres** on another.
+
+#### Files
+
+You can find the two compose files in the [`infrastructure/`](./infrastructure/) folder:
+
+* [`docker-compose-instance-1-app.yml`](./infrastructure/docker-compose-instance-1-app.yml) - Java backend.
+* [`docker-compose-instance-2-nginx-db.yml`](./infrastructure/docker-compose-instance-2-nginx-db.yml) - NPM and Database.
+
+#### Infrastructure Diagram (Private Network)
+
+Here is how the system is organized. Communication between the backend and database happens over a secure, private network channel.
+
+1.  **Telegram Mini App (Frontend):** Renders in the user's Telegram app and sends HTTPS requests to the custom domain.
+2.  **Cloudflare (SSL & Security):** Terminates SSL, provides WAF protection, and proxies requests to the server.
+3.  **Instance 2: Nginx Proxy Manager:** Receives public traffic on port 443, handles domain certificates, and forwards API calls to the internal network.
+4.  **Instance 1: Java Spring Boot Backend:** Processes business logic, integrates with Telegram Bot API, and manages orders.
+5.  **Instance 2: PostgreSQL Database:** Stores the data. Access is restricted only to the internal network.
+
+![Hop-In Taxi Demo Architecture Diagram](./infrastructure/assets/demo-architecture.png)
 
 
 ## ⚙️ Nginx Proxy Manager Setup
