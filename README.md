@@ -82,7 +82,7 @@ Here is how the system is organized. Communication between the backend and datab
 4.  **Instance 1: Java Spring Boot Backend:** Processes business logic, integrates with Telegram Bot API, and manages orders.
 5.  **Instance 2: PostgreSQL Database:** Stores the data. Access is restricted only to the internal network.
 
-![Hop-In Taxi Demo Architecture Diagram](./infrastructure/assets/demo-architecture.png)
+![Hop-In Taxi Demo Architecture Diagram](./infrastructure/assets/demo-architecture-diagram.png)
 
 
 ## ⚙️ Nginx Proxy Manager Setup
