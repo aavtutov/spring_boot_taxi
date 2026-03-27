@@ -7,7 +7,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableAsync(proxyTargetClass = true)
 public class SpringBootTaxiApplication {
 
 	public static void main(String[] args) {
