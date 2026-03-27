@@ -7,19 +7,27 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.config.FareProperties;
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.ClientRepository;
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.DriverRepository;
 import com.aavtutov.spring.boot.spring_boot_taxi.dao.OrderRepository;
+import com.aavtutov.spring.boot.spring_boot_taxi.dto.OrderResponseDTO;
+import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.OrderMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderCancellationSource;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderStatus;
+import com.aavtutov.spring.boot.spring_boot_taxi.event.OrderUpdateEvent;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.MapboxServiceException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.NoContentException;
@@ -43,6 +51,9 @@ public class OrderServiceImpl implements OrderService {
 	private final MapboxRoutingService mapboxRoutingService;
 	private final TelegramBotService telegramBotService;
 	private final FareProperties fareProperties;
+	private final SimpMessagingTemplate simpMessagingTemplate;
+	private final OrderMapper orderMapper;
+	private ApplicationEventPublisher eventPublisher;
 	
 	@Transactional
 	@Override
@@ -54,7 +65,9 @@ public class OrderServiceImpl implements OrderService {
 		
 		updateRouteDetails(order);
 		order.setClient(client);
-		return orderRepository.save(order);
+		
+		eventPublisher.publishEvent(new OrderUpdateEvent());
+		return order;
 	}
 	
 	@Transactional
@@ -73,8 +86,9 @@ public class OrderServiceImpl implements OrderService {
 		order.setStatus(OrderStatus.ACCEPTED);
 		order.setAcceptedAt(Instant.now());
 		
-		notifyClient(order, "🚕💨 Your driver is on the way!");
-		return orderRepository.save(order);
+		messageClient(order, "🚕💨 Your driver is on the way!");
+		eventPublisher.publishEvent(new OrderUpdateEvent());
+		return order;
 	}
 	
 	@Transactional
@@ -95,8 +109,8 @@ public class OrderServiceImpl implements OrderService {
 		order.setPrice(calculatedPrice);
 		order.setTotalPrice(calculatedPrice.add(order.getBonusFare()));
 		
-		notifyClient(order, createCompletionMessage(order));
-		return orderRepository.save(order);
+		messageClient(order, createCompletionMessage(order));
+		return order;
 	}	
 	
 	@Transactional
@@ -112,8 +126,8 @@ public class OrderServiceImpl implements OrderService {
 		order.setStatus(OrderStatus.IN_PROGRESS);
 		order.setStartedAt(Instant.now());
 		
-		notifyClient(order, "👋 Your driver has arrived!");
-		return orderRepository.save(order);
+		messageClient(order, "👋 Your driver has arrived!");
+		return order;
 	}	
 	
 	@Transactional
@@ -130,8 +144,8 @@ public class OrderServiceImpl implements OrderService {
 		order.setCancellationSource(OrderCancellationSource.DRIVER);
 		order.setCancelledAt(Instant.now());
 
-		notifyClient(order, createDriverCancellationMessage(order));
-		return orderRepository.save(order);
+		messageClient(order, createDriverCancellationMessage(order));
+		return order;
 	}	
 	
 	@Transactional
@@ -147,8 +161,8 @@ public class OrderServiceImpl implements OrderService {
 		order.setCancellationSource(OrderCancellationSource.CLIENT);
 		order.setCancelledAt(Instant.now());
 
-		notifyDriver(order, createClientCancellationMessage(order));
-		return orderRepository.save(order);
+		messageDriver(order, createClientCancellationMessage(order));
+		return order;
 	}	
 	
 	@Override
@@ -220,12 +234,12 @@ public class OrderServiceImpl implements OrderService {
 		}
 	}
 	
-	private void notifyClient(OrderEntity order, String message) {
+	private void messageClient(OrderEntity order, String message) {
         Optional.ofNullable(order.getClient().getTelegramChatId())
                 .ifPresent(chatId -> telegramBotService.sendMessage(chatId, message));
     }
 	
-	private void notifyDriver(OrderEntity order, String message) {
+	private void messageDriver(OrderEntity order, String message) {
         Optional.ofNullable(order.getDriver()) // if driver not assigned yet
         		.map(DriverEntity::getTelegramChatId)
                 .ifPresent(chatId -> telegramBotService.sendMessage(chatId, message));
@@ -267,5 +281,15 @@ public class OrderServiceImpl implements OrderService {
 	private OrderEntity findOrderByIdOrThrow(Long orderId) {
 		return orderRepository.findById(orderId)
 				.orElseThrow(() -> new OrderNotFoundException("Order with id=" + orderId + " not found"));
+	}
+	
+	@Async
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	private void handleOrderUpdate(OrderUpdateEvent event) {
+		List<OrderResponseDTO> pendingOrdersDTOs = 
+				orderRepository.findAllByStatus(OrderStatus.PENDING).stream()
+				.map(orderMapper::toResponseDto)
+				.toList();
+		simpMessagingTemplate.convertAndSend("/topic/available-orders", pendingOrdersDTOs);
 	}
 }
