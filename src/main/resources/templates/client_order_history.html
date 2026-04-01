@@ -121,7 +121,7 @@
      	// Standard Telegram Back Button behavior
         tg.BackButton.show();
         tg.BackButton.onClick(() => {
-            window.location.href = `/index.html?initData=${encodeURIComponent(initData)}`;
+            window.location.href = `/?initData=${encodeURIComponent(initData)}`;
         });
 
         loadClientHistory();

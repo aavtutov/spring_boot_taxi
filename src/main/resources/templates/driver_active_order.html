@@ -99,9 +99,10 @@
         }
 
     </style>
-    <!-- Telegram -->
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Mapbox -->
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
 </head>
@@ -126,318 +127,132 @@
 </div>
 
 <script th:inline="javascript">
-    // --- Data Initialization ---
-    const initData = Telegram.WebApp?.initData || Telegram.WebApp?.initDataUnsafe || '';
-    const order = /*[[${order}]]*/ null;
-    const noActiveOrder = /*[[${noActiveOrder}]]*/ false;
     const tg = Telegram.WebApp;
-    const ORDER_POLL_INTERVAL = 5000;
-    let orderStatusPollTimer = null;
+    const initData = tg.initData || tg.initDataUnsafe || '';    
+    const orderId = /*[[${order?.id}]]*/ null; 
+    const orderStatus = /*[[${order?.status}]]*/ '';
+    const noActiveOrder = /*[[${noActiveOrder}]]*/ false;
+    const mapboxToken = /*[[${mapboxToken}]]*/ '';
     
+    let stompClient = null;
 
-    if (!initData) {
-        tg.showAlert('Error: Unable to retrieve Telegram data.');
-        throw new Error('No initData');
-    }
+    const goToDashboard = () => {
+        window.location.href = `/driver/dashboard?initData=${encodeURIComponent(initData)}`;
+    };
 
-    // Redirect if no order is found
-    if (!order || noActiveOrder) {
-        tg.showAlert('You have no active orders.', () => {
-            window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-        });
-    } else {
-        tg.ready();
-
-        // --- Navigation Setup ---
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => {
-            window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-        });
-
-        // --- Map Configuration ---
-        const startLat = parseFloat(order.startLatitude);
-        const startLng = parseFloat(order.startLongitude);
-        const endLat = parseFloat(order.endLatitude);
-        const endLng = parseFloat(order.endLongitude);
+    function initMap() {
+        if (!mapboxToken || !orderId) return;
+        mapboxgl.accessToken = mapboxToken;
         
-        const startPopupContent = `
-            ${order.startAddress}
-            ${order.notes ? `<br><br>📌 <em>Note: ${order.notes}</em>` : ''}
-        `;
-        
-         const endPopupContent = `
-            ${order.endAddress}
-            ${order.notes ? `<br><br>📌 <em>Note: ${order.notes}</em>` : ''}
-        `;
-
-        mapboxgl.accessToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWpocDFpdmsxOW91M2NzNmZuc2kza3BjIn0.QJgCGsTJFtZGcJyxgQlDyA';
+        const [sLat, sLng, eLat, eLng] = [
+            /*[[${order?.startLatitude}]]*/ 0, /*[[${order?.startLongitude}]]*/ 0,
+            /*[[${order?.endLatitude}]]*/ 0, /*[[${order?.endLongitude}]]*/ 0
+        ].map(parseFloat);
 
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/navigation-day-v1',
-            center: [startLng, startLat],
-            zoom: 12
+            center: [sLng, sLat],
+            zoom: 14
         });
-
-        // Add Markers
-        new mapboxgl.Marker({color: 'black'})
-            .setLngLat([startLng, startLat])
-            .setPopup(new mapboxgl.Popup({ offset: 25 })
-            .setHTML(startPopupContent))
-            .addTo(map);
-
-        const flagMarker = document.createElement('div');
-        flagMarker.textContent = '🏁';
-        flagMarker.style.fontSize = '24px';
-
-        new mapboxgl.Marker(flagMarker)
-            .setLngLat([endLng, endLat])
-            .setPopup(new mapboxgl.Popup({ offset: 25 })
-            .setHTML(endPopupContent))
-            .addTo(map);
-
-        // --- Route Drawing ---
-        async function getRoute(start, end) {
-            const query = await fetch(
-                `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`
-            );
-            const data = await query.json();
-            return data.routes[0].geometry;
-        }
 
         map.on('load', async () => {
-            const routeGeo = await getRoute([startLng, startLat], [endLng, endLat]);
+            new mapboxgl.Marker({color: 'black'}).setLngLat([sLng, sLat]).addTo(map);
+            const flag = document.createElement('div');
+            flag.textContent = '🏁'; flag.style.fontSize = '24px';
+            new mapboxgl.Marker(flag).setLngLat([eLng, eLat]).addTo(map);
 
-            map.addSource('route', {
-                type: 'geojson',
-                data: { type: 'Feature', geometry: routeGeo }
-            });
-
-            map.addLayer({
-                id: 'route',
-                type: 'line',
-                source: 'route',
-                layout: {'line-join': 'round', 'line-cap': 'round'},
-                paint: { 'line-color': '#000', 'line-width': 5 }
-            });
-
-            const bounds = new mapboxgl.LngLatBounds();
-            routeGeo.coordinates.forEach(coord => bounds.extend(coord));
-            map.fitBounds(bounds, { 
-    		    padding: {
-    		        top: 200,
-    		        bottom: 100,
-    		        left: 50,
-    		        right: 50
-    		    },
-    		    duration: 2000
-    		});
-            
-            
-        });
-        
-        function toggleMenu() {
-        	document.getElementById('update-menu')?.classList.toggle('hidden');
-    	}
-
-        // --- Order Status Management ---
-        /**
-         * Sends status updates to the server and handles the UI response.
-         */
-        function updateOrderStatus(action) {
-            fetch(`/api/orders/${order.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Telegram-Init-Data': initData
-                },
-                body: JSON.stringify({action})
-            })
-            .then(res => {
-                if (!res.ok) return res.text().then(t => { throw new Error(t); });
-                return res.json();
-            })
-            .then(updatedOrder => {
-                if (action === 'COMPLETE') {
-                	
-                	if(tg.HapticFeedback) {
-                		tg.HapticFeedback.notificationOccurred('success');
-                	}
-                	
-                    const total = updatedOrder.totalPrice || 0;
-                    const tip = updatedOrder.bonusFare || 0;
-                    const fare = total - tip;
-
-                    tg.showAlert(
-                    		`Trip Completed! 🏁\n\n` +
-                    	    `Fare: ${fare.toFixed(2)}\n` +
-                    	    `Tip: ${tip}\n` +
-                    	    `-------------------\n` +
-                    	    `Total: ${total.toFixed(2)}`, 
-                        () => {
-                            window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-                        }
-                    );
-                } 
-                else if (action === 'CANCEL_BY_DRIVER') {
-                	
-                	if (tg.HapticFeedback) {
-                        tg.HapticFeedback.notificationOccurred('warning');
-                    }
-                	
-                    tg.showAlert('Order cancelled.', () => {
-                        window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-                    });
-                }
-                else {
-                	
-                	if (tg.HapticFeedback) {
-                        tg.HapticFeedback.impactOccurred('medium');
-                    }
-                	
-                    location.reload(); // For START_TRIP
-                }
-            })
-            .catch(err => {
-                console.error('Update error:', err);
-                
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.notificationOccurred('error');
-                }
-                
-                tg.showAlert('Error: ' + err.message);
-            });
-        }
-
-        // --- Driver Presence (Heartbeat) ---
-        const HEARTBEAT_INTERVAL = 30000;
-        let heartbeatTimer = null;
-
-        async function sendHeartbeat() {
             try {
-                await fetch('/api/drivers/heartbeat', {
-                    method: 'POST',
-                    headers: { 'X-Telegram-Init-Data': initData }
+                const res = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving/${sLng},${sLat};${eLng},${eLat}?geometries=geojson&access_token=${mapboxToken}`);
+                const data = await res.json();
+                const routeGeo = data.routes[0].geometry;
+
+                map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: routeGeo } });
+                map.addLayer({
+                    id: 'route',
+                    type: 'line',
+                    source: 'route',
+                    paint: { 'line-color': '#000', 'line-width': 5 }
                 });
-            } catch (error) {
-                console.error('Heartbeat error:', error);
-                stopHeartbeat();
-            }
-        }
-        
-        
-        function startOrderStatusPolling() {
-            if (orderStatusPollTimer) return;
-            
-            orderStatusPollTimer = setInterval(async () => {
-                try {
-                    const response = await fetch(`/api/orders/${order.id}`, {
-                        method: 'GET',
-                        headers: { 'X-Telegram-Init-Data': initData }
-                    });
 
-                    if (response.status === 404 || response.status === 204) {
-                        handleOrderTerminated('Order no longer exists.');
-                        return;
-                    }
-
-                    const updatedOrder = await response.json();
-
-                    // If CANCELED or COMPLETED elsewhere
-                    const terminalStatuses = ['CANCELED', 'COMPLETED'];
-                    if (terminalStatuses.includes(updatedOrder.status) && updatedOrder.status !== order.status) {
-                        let message = 'Order was cancelled by the client.';
-                        if (updatedOrder.status === 'COMPLETED') message = 'Order was marked as completed.';
-                        
-                        handleOrderTerminated(message);
-                    }
-                } catch (err) {
-                    console.error('Polling error:', err);
-                }
-            }, ORDER_POLL_INTERVAL);
-        }
-
-        function handleOrderTerminated(message) {
-            stopOrderStatusPolling();
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-            
-            tg.showAlert(message, () => {
-                window.location.href = '/driver/dashboard?initData=' + encodeURIComponent(initData);
-            });
-        }
-
-        function stopOrderStatusPolling() {
-            clearInterval(orderStatusPollTimer);
-            orderStatusPollTimer = null;
-        }
-        
-
-        function startHeartbeat() {
-            if (heartbeatTimer) return;
-            sendHeartbeat();
-            heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
-        }
-
-        function stopHeartbeat() {
-            clearInterval(heartbeatTimer);
-            heartbeatTimer = null;
-        }
-        
-        
-     	// --- Activity Monitoring ---
-        /**
-         * Stops/Starts all timers when the user switches apps or minimizes Telegram.
-         */
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopHeartbeat();
-                stopOrderStatusPolling();
-            } else {
-                startHeartbeat();
-                startOrderStatusPolling();
-            }
+                const bounds = new mapboxgl.LngLatBounds();
+                routeGeo.coordinates.forEach(c => bounds.extend(c));
+                map.fitBounds(bounds, { padding: 50 });
+            } catch (e) { console.error("Map error", e); }
         });
-        
+    }
 
-        // --- UI Logic & Event Listeners ---
-        document.addEventListener('DOMContentLoaded', () => {
-            startHeartbeat();
-            startOrderStatusPolling();
-            const btnDriverArrived = document.getElementById('btn-driver-arrived');
-            const btnComplete = document.getElementById('btn-complete-trip');
-            const btnCancel = document.getElementById('btn-cancel-trip');
-
-            btnDriverArrived?.classList.add('hidden');
-            btnComplete?.classList.add('hidden');
-            
-            // 1. Order Accepted - Waiting for Passenger
-            if (order.status === 'ACCEPTED') {
-            	btnDriverArrived?.classList.remove('hidden');
-            	btnDriverArrived?.addEventListener('click', () => {
-                    tg.showConfirm('Confirm arrival?', (ok) => {
-                        if (ok) updateOrderStatus('START_TRIP');
-                    });
-                });
-            }
-            // 2. Trip in Progress
-            else if (order.status === 'IN_PROGRESS') {
-                btnComplete?.classList.remove('hidden');
-                btnComplete?.addEventListener('click', () => {
-                    tg.showConfirm('Are you sure you want to complete this trip?', (ok) => {
-                        if (ok) updateOrderStatus('COMPLETE');
-                    });
-                });
-            }
-            
-            btnCancel?.addEventListener('click', () => {
-                tg.showConfirm('Are you sure you want to cancel this trip?', (ok) => {
-                    if (ok) updateOrderStatus('CANCEL_BY_DRIVER');
-                });
+    function connectWebSocket() {
+        const socket = new SockJS('/ws-taxi');
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+        stompClient.connect({}, () => {
+            stompClient.subscribe(`/topic/order-status/${orderId}`, (msg) => {
+                const status = JSON.parse(msg.body).status;
+                if (['CANCELED', 'COMPLETED'].includes(status)) {
+                    tg.showAlert(`Status changed: ${status}`, goToDashboard);
+                }
             });
         });
     }
-</script>
-</body>
 
+    async function updateOrderStatus(action) {
+        try {
+            const res = await fetch(`/api/orders/${orderId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-Telegram-Init-Data': initData },
+                body: JSON.stringify({ action })
+            });
+            if (!res.ok) throw new Error('Update failed');
+            const updated = await res.json();
+
+            if (action === 'COMPLETE') {
+                tg.HapticFeedback?.notificationOccurred('success');
+                const fare = updated.totalPrice - updated.bonusFare;
+                tg.showAlert(
+                		`Trip Completed! 🏁\n\n` +
+                		`Fare: ${fare.toFixed(2)}\n` +
+                		`Tip: ${updated.bonusFare.toFixed(2)}\n` +
+                		`-------------------\n` +
+                		`Total: ${updated.totalPrice.toFixed(2)}`, goToDashboard);
+            } else if (action === 'CANCEL_BY_DRIVER') {
+                tg.showAlert('Order cancelled.', goToDashboard);
+            } else {
+                location.reload();
+            }
+        } catch (err) {
+            tg.showAlert(`Error: ${err.message}`);
+        }
+    }
+    
+    const toggleMenu = () => document.getElementById('update-menu')?.classList.toggle('hidden');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (noActiveOrder || !orderId) return tg.showAlert('You have no active orders.', goToDashboard);
+
+        tg.ready();
+        tg.BackButton.show();
+        tg.BackButton.onClick(goToDashboard);
+
+        const setupBtn = (id, action, text) => {
+            const btn = document.getElementById(id);
+            if (btn) btn.onclick = () => tg.showConfirm(text, ok => ok && updateOrderStatus(action));
+            return btn;
+        };
+
+        const btnArrived = setupBtn('btn-driver-arrived', 'START_TRIP', 'Confirm arrival?');
+        const btnComplete = setupBtn('btn-complete-trip', 'COMPLETE', 'Are you sure you want to complete this trip?');
+        const btnCancel = setupBtn('btn-cancel-trip', 'CANCEL_BY_DRIVER', 'Are you sure you want to cancel this trip?');
+
+        if (orderStatus === 'ACCEPTED') btnArrived?.classList.remove('hidden');
+        if (orderStatus === 'IN_PROGRESS') btnComplete?.classList.remove('hidden');
+
+        initMap();
+        connectWebSocket();
+        setInterval(() => fetch('/api/drivers/heartbeat', { method: 'POST', headers: { 'X-Telegram-Init-Data': initData } }), 30000);
+    });
+</script>
+
+</body>
 </html>
 
