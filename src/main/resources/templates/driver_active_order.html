@@ -183,14 +183,14 @@
     }
 
     function connectWebSocket() {
-        const socket = new SockJS('/ws-taxi');
+        const socket = new SockJS('/api/ws-taxi');
         stompClient = Stomp.over(socket);
         stompClient.debug = null;
         stompClient.connect({}, () => {
             stompClient.subscribe(`/topic/order-status/${orderId}`, (msg) => {
                 const status = JSON.parse(msg.body).status;
-                if (['CANCELED', 'COMPLETED'].includes(status)) {
-                    tg.showAlert(`Status changed: ${status}`, goToDashboard);
+                if (status === 'CANCELED') {
+                    tg.showAlert(`Order cancelled.`, goToDashboard);
                 }
             });
         });
