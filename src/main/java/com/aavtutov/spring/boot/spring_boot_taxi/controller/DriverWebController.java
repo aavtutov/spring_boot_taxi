@@ -1,5 +1,6 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +23,9 @@ public class DriverWebController {
 	private final DriverService driverService;
 	private final OrderService orderService;
 	private final OrderMapper orderMapper;
+	
+	@Value("${mapbox.access.token}")
+	private String mapboxAccessToken;
 
 	/**
      * Entry point for the driver section. 
@@ -29,6 +33,7 @@ public class DriverWebController {
      */
 	@GetMapping("/dashboard")
 	public String getDriverDashboard(ClientEntity client, Model model) {
+		
 		return driverService.findByTelegramId(client.getTelegramId())
 		.map(driver -> {
 			model.addAttribute("driverStatus", driver.getStatus().name());
@@ -45,9 +50,14 @@ public class DriverWebController {
      */
 	@GetMapping("/active-order")
 	public String getActiveOrdersPage(DriverEntity driver, Model model) {
+		
 		orderService.findActiveOrderByDriver(driver.getId()).ifPresentOrElse(
-				order -> model.addAttribute("order", orderMapper.toResponseDto(order)),
+				order -> {
+					model.addAttribute("order", orderMapper.toResponseDto(order));
+					model.addAttribute("mapboxToken", mapboxAccessToken);
+				},
 				() -> model.addAttribute("noActiveOrder", true));
+		
 		return "driver_active_order";
 	}
 	

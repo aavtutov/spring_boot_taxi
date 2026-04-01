@@ -1,20 +1,48 @@
 // --- Configuration & Global State ---
-mapboxgl.accessToken = 'pk.eyJ1IjoibW90ZWhhbG9nZW4wayIsImEiOiJjbWpocDFpdmsxOW91M2NzNmZuc2kza3BjIn0.QJgCGsTJFtZGcJyxgQlDyA';
+mapboxgl.accessToken = window.AppConfig?.mapboxToken || '';
 
-let appConfig = { baseFare: 50, perKm: 20, perMin: 5, currency: '€' };
+let appConfig = {
+	baseFare: window.AppConfig?.fare.base || 0,
+	perKm: window.AppConfig?.fare.perKm || 0,
+	perMin: window.AppConfig?.fare.perMin || 0,
+	currency: window.AppConfig?.fare.currency || ''};
+let estimated = appConfig.baseFare, bonusFromUser = 0;
+updateEstimatedPriceText();
+
 let initData = '';
 let map, currentField = null;
-let estimated = appConfig.baseFare, bonusFromUser = 0;
 let selectionMode = 'start';
 let formLocked = false;
-let orderStatusPollInterval = null;
 let currentOrder = null;
 let lastKnownOrder = null;
+let orderStatusSubscription = null;
+let stompClient = null;
 
 let startMarker = null;
 let endMarker = null;
 let aproximateDistance = null; // km
 let aproximateDuration = null;  // min
+
+function connectWebSocket() {
+    const socket = new SockJS('/api/ws-taxi');
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function (frame) {
+        console.log('Connected to WebSocket: ' + frame);
+        
+        if (currentOrder) {
+            const isActive = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].includes(currentOrder.status);
+            if (isActive) {
+                subscribeToOrderStatus(currentOrder.id);
+            }
+        }
+    }, function (error) {
+        console.error('WebSocket Error: ', error);
+        setTimeout(connectWebSocket, 5000);
+    });
+}
+
+connectWebSocket();
 
 // --- WebApp Initialization ---
 const tg = window.Telegram.WebApp;
@@ -257,22 +285,6 @@ function initAddressModal() {
 	}
 }
 
-
-async function loadConfig() {
-    try {
-        const res = await fetch('/api/config');
-        if (res.ok) {
-            const data = await res.json();
-            appConfig = data;
-            estimated = appConfig.baseFare; 
-            updateEstimatedPriceText();
-            console.log("App config loaded from server:", appConfig);
-        }
-    } catch (err) {
-        console.error("Using default config due to error:", err);
-    }
-}
-
 // --- Telegram WebApp ---
 async function initWebApp() {
 	if (!window.Telegram || !Telegram.WebApp) return;
@@ -280,8 +292,6 @@ async function initWebApp() {
 	const WebApp = Telegram.WebApp;
 	WebApp.ready();
 	initData = WebApp.initData;
-	
-	await loadConfig();
 	
 	const formOverlay = document.getElementById('formOverlay');
 	    if (formOverlay) {
@@ -305,7 +315,9 @@ async function initWebApp() {
 			const isActive = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].includes(order.status);
 
 			if (isActive) {
+				currentOrder = order;
 				handleActiveOrder(order);
+				lockFormInteractions();
 			} else {
 				showOrderForm();
 			}
@@ -543,8 +555,13 @@ function handleActiveOrder(order) {
 
     lockFormInteractions();
     currentOrder = order;
-    startPollingOrderStatus(order.id);
-
+	
+	try {
+		subscribeToOrderStatus(order.id);
+	} catch(e) {
+		console.warn("Subscription failed, but UI is updated:", e);
+	}
+   
     drawRouteOnMap(
         [order.startLongitude, order.startLatitude],
         [order.endLongitude, order.endLatitude]
@@ -554,6 +571,14 @@ function handleActiveOrder(order) {
 function lockFormInteractions() {
 	formLocked = true;
 
+	['startAddress', 'endAddress', 'notes'].forEach(id => {
+	        const el = document.getElementById(id);
+	        if (el) {
+	            el.readOnly = true;
+	            el.classList.add('readonly');
+	        }
+	    });
+	
 	['pin-button-start', 'pin-button-end', 'pin-button-notes'].forEach(id => {
 		const btn = document.getElementById(id);
 		if (btn) btn.disabled = true;
@@ -567,7 +592,6 @@ function lockFormInteractions() {
 	
 	updateIconsOpacity(null);
 }
-
 
 // --- Helpers ---
 function setSelectionMode(mode) {
@@ -659,8 +683,6 @@ function formInactive(shouldReset = true) {
         geoBtn.style.pointerEvents = 'auto';
     }
 
-    stopPollingOrderStatus();
-
     if (map.getSource('route')) {
         map.removeLayer('route');
         map.removeSource('route');
@@ -670,6 +692,7 @@ function formInactive(shouldReset = true) {
         startMarker.remove();
         startMarker = null;
     }
+	
     if (endMarker) {
         endMarker.remove();
         endMarker = null;
@@ -704,7 +727,6 @@ async function cancelOrder(order) {
     }
 }
 
-
 // --- User-menu and avatar ---
 const user = Telegram.WebApp.initDataUnsafe.user;
 if (user?.photo_url) {
@@ -732,7 +754,6 @@ document.addEventListener('click', (e) => {
 	}
 });
 
-
 // --- Pulsation ---
 function showPulseOnMarker() {
 	const pulse = document.querySelector('#marker-pin .pin-pulse');
@@ -744,67 +765,59 @@ function removePulseFromMarker() {
 	if (pulse) pulse.style.display = 'none';
 }
 
-// --- Polling ---
-function startPollingOrderStatus(orderId) {
-	stopPollingOrderStatus();
+function subscribeToOrderStatus(orderId) {
+	
+	if (!stompClient || !stompClient.connected) {
+	        console.warn("STOMP not connected yet. Subscription deferred.");
+	        return;
+	    }
+	
+    if (orderStatusSubscription) {
+        orderStatusSubscription.unsubscribe();
+    }
 
-	orderStatusPollInterval = setInterval(async () => {
-		try {
-			const response = await fetch(`/api/orders/${orderId}`, {
-				method: 'GET',
-				headers: {
-					'X-Telegram-Init-Data': initData
-				}
-			});
+    console.log("Subscribing to order status updates for ID:", orderId);
 
-			if (!response.ok) throw new Error('Error: Order status polling response');
+    orderStatusSubscription = stompClient.subscribe('/topic/order-status/' + orderId, function (message) {
+        const updatedOrder = JSON.parse(message.body);
+        
+        console.log("Received status update via WebSocket:", updatedOrder.status);
 
-			const updatedOrder = await response.json();
+        if (updatedOrder.status !== currentOrder.status) {
+            currentOrder = updatedOrder;
 
-			if (updatedOrder.status !== currentOrder.status) {
-				currentOrder = updatedOrder;
+            const isStillActive = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].includes(updatedOrder.status);
 
-				const isStillActive = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].includes(updatedOrder.status);
+            if (isStillActive) {
+                handleActiveOrder(updatedOrder); 
+            } else {
+                if (orderStatusSubscription) {
+                    orderStatusSubscription.unsubscribe();
+                    orderStatusSubscription = null;
+                }
 
-				if (isStillActive) {
-					handleActiveOrder(updatedOrder); 
-				} else {
-					stopPollingOrderStatus();
-
-					lastKnownOrder = updatedOrder;
-					
-					switch (updatedOrder.status) {
-						case 'CANCELED':
-							if (updatedOrder.cancellationSource === 'DRIVER') {
-								alert("Your ride was cancelled by the driver");
-								formInactive(false);
-							} else {
-								formInactive(true);
-							}
-							break;
-						case 'COMPLETED':
-							alert(`Your ride was completed!\nTotal price: ${updatedOrder.totalPrice}`);
-							formInactive(true);
-							break;
-						default:
-							alert(`Order status: ${updatedOrder.status}`);
-							formInactive(true);
-							break;
-					}
-				}
-			}
-
-		} catch (err) {
-			console.error("Error: order status update:", err);
-		}
-	}, 3000);
+                lastKnownOrder = updatedOrder;
+                processFinalStatus(updatedOrder);
+            }
+        }
+    });
 }
 
-function stopPollingOrderStatus() {
-	if (orderStatusPollInterval) {
-		clearInterval(orderStatusPollInterval);
-		orderStatusPollInterval = null;
-	}
+function processFinalStatus(order) {
+    switch (order.status) {
+        case 'CANCELED':
+			if(order.cancellationSource === 'DRIVER') {
+				tg.showAlert("Your ride was cancelled by the driver");
+			}
+			formInactive(order.cancellationSource !== 'DRIVER');
+            break;
+        case 'COMPLETED':
+            alert(`Your ride was completed!\nTotal price: ${order.totalPrice}`);
+            formInactive(true);
+            break;
+        default:
+            formInactive(true);
+    }
 }
 
 function hideLastTripChip() {
@@ -933,9 +946,9 @@ function useCurrentLocation() {
 
 // --- Visibility / Lifecycle ---
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        stopPollingOrderStatus();
-    } else if (currentOrder) {
-        startPollingOrderStatus(currentOrder.id);
+    if (!document.hidden) {
+		if (!stompClient || !stompClient.connected) {
+			connectWebSocket();
+		}
     }
 });
