@@ -32,6 +32,15 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
 	
 	@Query("SELECT o FROM OrderEntity o JOIN FETCH o.client LEFT JOIN FETCH o.driver WHERE o.id = :id")
 	Optional<OrderEntity> findByIdWithClientAndDriver(@Param("id") Long orderId);
+	
+	@Query("SELECT o FROM OrderEntity o " +
+		       "LEFT JOIN FETCH o.client " +
+		       "LEFT JOIN FETCH o.driver " +
+		       "WHERE (o.client.telegramId = :tgId OR o.driver.telegramId = :tgId) " +
+		       "AND o.status IN (:statuses)")
+	Optional<OrderEntity> findActiveOrderForChat(
+		    @Param("tgId") Long telegramId, 
+		    @Param("statuses") List<OrderStatus> statuses);
 
 	List<OrderEntity> findByDriverIdAndStatusIn(Long driverId, List<OrderStatus> statuses);
 

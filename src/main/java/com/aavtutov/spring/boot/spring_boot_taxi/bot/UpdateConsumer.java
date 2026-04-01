@@ -16,6 +16,7 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.ClientService;
+import com.aavtutov.spring.boot.spring_boot_taxi.service.OrderChatService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,23 +29,38 @@ import lombok.extern.slf4j.Slf4j;
 public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 
 	private final ClientService clientService;
+	private final OrderChatService orderChatService;
 	private final TelegramClient telegramClient;
 	private final String webAppUrl;
 
-	public UpdateConsumer(ClientService clientService, @Value("${telegram.bot.token}") String botToken,
+	public UpdateConsumer(
+			ClientService clientService,
+			OrderChatService orderChatService,
+			@Value("${telegram.bot.token}") String botToken,
 			@Value("${web.app.url}") String webAppUrl) {
 		this.clientService = clientService;
 		this.telegramClient = new OkHttpTelegramClient(botToken);
 		this.webAppUrl = webAppUrl;
+		this.orderChatService = orderChatService;
 	}
 
 	@Override
 	public void consume(Update update) {
-		if (!update.hasMessage()) return;
-
+		if (!update.hasMessage() || !update.getMessage().hasText()) return;
+		
 		Long telegramId = update.getMessage().getFrom().getId();
 		String firstName = update.getMessage().getFrom().getFirstName();
 		String chatId = update.getMessage().getChatId().toString();
+		String messageText = update.getMessage().getText();
+		
+		if(!messageText.startsWith("/")) {
+			boolean isProcessedAsChat = orderChatService.tryForwardMessage(telegramId, messageText);
+			if(isProcessedAsChat) {
+				return;
+			} else {
+				sendMessage(chatId, "You don't have active orders 🙂");
+			}
+		}
 
 		processUserRegistration(telegramId, firstName, chatId);
 		sendWebAppButton(chatId,
