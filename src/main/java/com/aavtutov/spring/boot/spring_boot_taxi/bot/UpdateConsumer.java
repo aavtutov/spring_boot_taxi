@@ -37,7 +37,10 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 		this.clientService = clientService;
 		this.orderChatService = orderChatService;
 		this.telegramBotService = telegramBotService;
-		this.webAppUrl = webAppUrl;
+		this.webAppUrl = webAppUrl.endsWith("/") 
+                ? webAppUrl + "loader" 
+                : webAppUrl + "/loader";
+		log.info("Telegram WebApp Entry Point initialized at: {}", this.webAppUrl);
 	}
 
 	@Override
