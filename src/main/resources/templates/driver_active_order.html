@@ -116,7 +116,7 @@
     <div id="map"></div>
 
     <div class="top-buttons">
-        <button class="btn-with-text" onclick="toggleMenu()">Update order</button>
+        <button class="btn-with-text">Update order</button>
     </div>
 
     <div id="update-menu" class="update-menu hidden">
@@ -227,12 +227,17 @@
     
     const toggleMenu = () => document.getElementById('update-menu')?.classList.toggle('hidden');
 
-    document.addEventListener('DOMContentLoaded', () => {
-        if (noActiveOrder || !orderId) return tg.showAlert('You have no active orders.', goToDashboard);
-
+    if (noActiveOrder || !orderId) {
+        tg.showAlert('You have no active orders.', goToDashboard);
+    } else {
         tg.ready();
         tg.BackButton.show();
         tg.BackButton.onClick(goToDashboard);
+
+        const updateBtn = document.querySelector('.btn-with-text');
+        if (updateBtn) {
+            updateBtn.onclick = toggleMenu;
+        }
 
         const setupBtn = (id, action, text) => {
             const btn = document.getElementById(id);
@@ -250,7 +255,7 @@
         initMap();
         connectWebSocket();
         setInterval(() => fetch('/api/drivers/heartbeat', { method: 'POST', headers: { 'X-Telegram-Init-Data': initData } }), 30000);
-    });
+    }
 </script>
 
 </body>
