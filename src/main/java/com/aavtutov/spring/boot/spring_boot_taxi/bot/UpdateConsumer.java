@@ -1,22 +1,18 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.bot;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.ClientService;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.OrderChatService;
+import com.aavtutov.spring.boot.spring_boot_taxi.service.TelegramBotService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,18 +26,18 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 
 	private final ClientService clientService;
 	private final OrderChatService orderChatService;
-	private final TelegramClient telegramClient;
+	private final TelegramBotService telegramBotService;
 	private final String webAppUrl;
 
 	public UpdateConsumer(
 			ClientService clientService,
 			OrderChatService orderChatService,
-			@Value("${telegram.bot.token}") String botToken,
+			TelegramBotService telegramBotService,
 			@Value("${web.app.url}") String webAppUrl) {
 		this.clientService = clientService;
-		this.telegramClient = new OkHttpTelegramClient(botToken);
-		this.webAppUrl = webAppUrl;
 		this.orderChatService = orderChatService;
+		this.telegramBotService = telegramBotService;
+		this.webAppUrl = webAppUrl;
 	}
 
 	@Override
@@ -52,19 +48,23 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 		String firstName = update.getMessage().getFrom().getFirstName();
 		String chatId = update.getMessage().getChatId().toString();
 		String messageText = update.getMessage().getText();
+		boolean isCommand = messageText.startsWith("/");
 		
-		if(!messageText.startsWith("/")) {
+		if(!isCommand) {
 			boolean isProcessedAsChat = orderChatService.tryForwardMessage(telegramId, messageText);
 			if(isProcessedAsChat) {
 				return;
 			} else {
-				sendMessage(chatId, "You don't have active orders 🙂");
+				telegramBotService.sendMessage(chatId, "You don't have an active ride right now, "
+						+ "so there's no one to receive your message yet.\n"
+						+ "\nBut you can always book one 👇");
 			}
 		}
 
 		processUserRegistration(telegramId, firstName, chatId);
 		sendWebAppButton(chatId,
-				"<b>Press the button to book a ride.</b>\n" + "Start using taxi right in your Telegram.");
+				"<b>Ready to go?</b>"
+				+ "\nOpen app to book your ride in seconds 🚀");
 	}
 
 	private void processUserRegistration(Long telegramId, String firstName, String chatId) {
@@ -81,7 +81,7 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
         newClient.setFullName(firstName);
         newClient.setTelegramChatId(chatId);
         clientService.save(newClient);
-        sendMessage(chatId, "👋 Hi, " + firstName + "! You have successfully registered.");
+        telegramBotService.sendMessage(chatId, "👋 Hi, " + firstName + "! You have successfully registered.");
     }
 	
 	private void updateChatIdIfNeeded(ClientEntity client, String chatId) {
@@ -92,31 +92,20 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
     }
 	
 	private void sendWebAppButton(String chatId, String messageText) {
-		WebAppInfo webAppInfo = WebAppInfo.builder().url(webAppUrl).build();
-		InlineKeyboardButton button = InlineKeyboardButton.builder().text("Open Application").webApp(webAppInfo).build();
-		InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder().keyboardRow(new InlineKeyboardRow(button)).build();
+		
+		WebAppInfo webAppInfo = WebAppInfo.builder()
+				.url(webAppUrl)
+				.build();
+		
+		InlineKeyboardButton button = InlineKeyboardButton.builder()
+				.text("Open Application")
+				.webApp(webAppInfo)
+				.build();
+		
+		InlineKeyboardMarkup keyboard = InlineKeyboardMarkup.builder()
+				.keyboardRow(new InlineKeyboardRow(button))
+				.build();
 
-		executeMessage(SendMessage.builder()
-                .chatId(chatId)
-                .text(messageText)
-                .parseMode("HTML")
-                .replyMarkup(keyboard)
-                .build());
+		telegramBotService.sendMessage(chatId, messageText, keyboard);
 	}
-
-	@Async
-	void sendMessage(String chatId, String messageText) {
-		executeMessage(SendMessage.builder()
-				.text(messageText)
-				.chatId(chatId)
-				.build());
-	}
-	
-	private void executeMessage(SendMessage message) {
-        try {
-            telegramClient.execute(message);
-        } catch (TelegramApiException e) {
-        	log.error("Failed to execute Telegram API message for chatId: {}", message.getChatId(), e);
-        }
-    }
 }

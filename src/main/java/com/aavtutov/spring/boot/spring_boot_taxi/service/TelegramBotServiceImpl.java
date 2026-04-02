@@ -1,11 +1,13 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.service;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -23,13 +25,27 @@ public class TelegramBotServiceImpl implements TelegramBotService {
 		this.webClient = webClientBuilder.baseUrl("https://api.telegram.org").build();
 		this.botToken = botToken;
 	}
+	
+	@Override
+    public void sendMessage(String chatId, String message) {
+        sendMessage(chatId, message, null);
+    }
 
-	public void sendMessage(String chatId, String message) {
+	@Override
+	public void sendMessage(String chatId, String message, InlineKeyboardMarkup keyboard) {
 		String urlPath = String.format("/bot%s/sendMessage", botToken);
+		
+		Map<String, Object> body = new HashMap<>();
+		body.put("chat_id", chatId);
+		body.put("text", message);
+		body.put("parse_mode", "HTML");
+		if (keyboard != null) {
+	        body.put("reply_markup", keyboard);
+	    }
 
 		webClient.post()
 				.uri(urlPath)
-				.bodyValue(Map.of("chat_id", chatId, "text", message))
+				.bodyValue(body)
 				.retrieve()
 				.bodyToMono(String.class)
 				.timeout(Duration.ofSeconds(5))

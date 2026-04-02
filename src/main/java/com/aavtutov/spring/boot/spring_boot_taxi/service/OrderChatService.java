@@ -32,7 +32,6 @@ public class OrderChatService {
 		OrderEntity order = orderOpt.get();
 		String recipientId;
 		String prefix;
-
 		boolean isClient = order.getClient().getTelegramId().equals(senderId);
 
 		if (isClient) {
@@ -40,10 +39,10 @@ public class OrderChatService {
 				return false; // just in case driver is not assigned
 			}
 			recipientId = order.getDriver().getTelegramChatId();
-			prefix = "💬 Message from customer:\n";
+			prefix = "💬 <b>Message from customer:</b>\n";
 		} else {
 			recipientId = order.getClient().getTelegramChatId();
-			prefix = "💬 Message from driver:\n";
+			prefix = "💬 <b>Message from driver:</b>\n";
 		}
 
 		telegramBotService.sendMessage(recipientId, prefix + text);

@@ -1,5 +1,7 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.service;
 
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+
 /**
  * Service for sending asynchronous notifications to users via Telegram.
  */
@@ -11,4 +13,6 @@ public interface TelegramBotService {
      * @param message Text content.
      */
 	void sendMessage(String chatId, String message);
+	
+	void sendMessage(String chatId, String message, InlineKeyboardMarkup keyboard);
 }
