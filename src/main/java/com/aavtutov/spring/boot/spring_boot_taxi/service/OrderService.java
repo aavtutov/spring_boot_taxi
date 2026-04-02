@@ -48,14 +48,14 @@ public interface OrderService {
      */
 	List<OrderEntity> findAvailableOrders();
 
-	Optional<OrderEntity> findActiveOrderByDriver(Long id);
-
+	Optional<OrderEntity> findActiveOrderByDriver(Long driverId);
+	
 	List<OrderEntity> findOrdersByClientId(Long clientId);
 
 	/**
      * Returns the latest order created by the client.
      */
-	OrderEntity findMostRecentOrderByClientId(Long clientId);
+	Optional<OrderEntity> findMostRecentOrderOptional(Long clientId);
 
 	List<OrderEntity> findOrdersByDriverId(Long driverId);
 }

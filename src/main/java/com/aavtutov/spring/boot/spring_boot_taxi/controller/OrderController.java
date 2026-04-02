@@ -61,17 +61,10 @@ public class OrderController {
         return orderMapper.toResponseDto(updatedOrder);
 	}
 
-
 	@GetMapping
 	public List<OrderResponseDTO> findAvailableOrders(DriverEntity driver) {
 		List<OrderEntity> availableOrders = orderService.findAvailableOrders();
 		return availableOrders.stream().map(orderMapper::toResponseDto).toList();
-	}
-	
-	@GetMapping("/current")
-	public OrderResponseDTO getClientCurrentOrder(ClientEntity client) {
-		OrderEntity order = orderService.findMostRecentOrderByClientId(client.getId());
-		return orderMapper.toResponseDto(order);
 	}
 
 	@GetMapping("/client-history")

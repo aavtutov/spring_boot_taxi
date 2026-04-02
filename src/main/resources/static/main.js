@@ -1,5 +1,7 @@
-// --- Configuration & Global State ---
+// CONFIGURATION / GLOBAL STATE
 mapboxgl.accessToken = window.AppConfig?.mapboxToken || '';
+const initialOrder = window.AppConfig?.initialOrder || null;
+let currentOrder = initialOrder;
 
 let appConfig = {
 	baseFare: window.AppConfig?.fare.base || 0,
@@ -13,7 +15,6 @@ let initData = '';
 let map, currentField = null;
 let selectionMode = 'start';
 let formLocked = false;
-let currentOrder = null;
 let lastKnownOrder = null;
 let orderStatusSubscription = null;
 let stompClient = null;
@@ -26,6 +27,7 @@ let aproximateDuration = null;  // min
 function connectWebSocket() {
     const socket = new SockJS('/api/ws-taxi');
     stompClient = Stomp.over(socket);
+	stompClient.debug = null;
 
     stompClient.connect({}, function (frame) {
         console.log('Connected to WebSocket: ' + frame);
@@ -44,7 +46,7 @@ function connectWebSocket() {
 
 connectWebSocket();
 
-// --- WebApp Initialization ---
+// WEBAPP INITIALIZATION
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
@@ -66,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	initNotesModal();
 });
 
-// --- Mapbox ---
+// MAPBOX
 function initMap() {
 	map = new mapboxgl.Map({
 		container: 'map',
@@ -126,7 +128,7 @@ function updateAddressFields(type, address, lat, lng) {
 	document.getElementById(`${type}Longitude`).value = lng.toFixed(6);
 }
 
-// --- Pricing & Distance ---
+// PRICING / DISTANCE
 async function updateEstimatedPriceIfPossible() {
 	const startLat = parseFloat(document.getElementById('startLatitude').value);
 	const startLng = parseFloat(document.getElementById('startLongitude').value);
@@ -183,7 +185,7 @@ function updateEstimatedPriceText() {
 		`Price: ~${estimated} (+${bonusFromUser} tip) = ~${total} ${appConfig.currency}`;
 }
 
-// --- Modals (Notes & Address Search) ---
+// MODALS (Notes & Address Search)
 function initNotesModal() {
 	const notesInput = document.getElementById('notes');
 	const notesModal = document.getElementById('notesModal');
@@ -210,7 +212,7 @@ function initNotesModal() {
 	});
 }
 
-// --- Address Modal (Mapbox search) ---
+// ADDRESS MODAL (Mapbox search)
 function initAddressModal() {
 	const startInput = document.getElementById('startAddress');
 	const endInput = document.getElementById('endAddress');
@@ -285,7 +287,7 @@ function initAddressModal() {
 	}
 }
 
-// --- Telegram WebApp ---
+// TELEGRAM WEBAPP
 async function initWebApp() {
 	if (!window.Telegram || !Telegram.WebApp) return;
 	
@@ -297,40 +299,28 @@ async function initWebApp() {
 	    if (formOverlay) {
 	        formOverlay.classList.add('fade-in', 'form-ready');
 	}
+	
+	if (initialOrder) {
+	        lastKnownOrder = initialOrder;
 
-	fetch(`/api/orders/current`, {
-		method: 'GET',
-		headers: { 'X-Telegram-Init-Data': initData }
-	})
-	.then(async res => {
-			if (res.status === 204) {
-				showOrderForm(); // Client doesnt have any orders
-				return;
-			}
+	        const isActive = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].includes(initialOrder.status);
 
-			const order = await res.json();
-			lastKnownOrder = order;
-
-			// Check order active status
-			const isActive = ['PENDING', 'ACCEPTED', 'IN_PROGRESS'].includes(order.status);
-
-			if (isActive) {
-				currentOrder = order;
-				handleActiveOrder(order);
-				lockFormInteractions();
-			} else {
-				showOrderForm();
-			}
-		})
-		.catch(err => {
-			console.error('Error getting order: ', err);
-			showOrderForm();
-		});
-
+	        if (isActive) {
+				currentOrder = initialOrder;
+	            handleActiveOrder(initialOrder);
+	            lockFormInteractions();
+	        } else {
+	            showOrderForm();
+	        }
+	    } else {
+	        showOrderForm();
+	    }
+		
 	document.getElementById('orderForm').addEventListener('submit', handleOrderSubmission);
 }
 
 function showOrderForm() {
+	console.log("Checking lastKnownOrder for chip:", lastKnownOrder);
 	document.getElementById('form-bonusFare-block').style.display = 'flex';
 	document.getElementById('form-menuBookPayment-block').style.display = 'flex';
 	document.getElementById('active-order-container').style.display = 'none';
@@ -472,7 +462,7 @@ function getValue(id) {
 	return document.getElementById(id).value;
 }
 
-// --- Active Order UI Management ---
+// ACTIVE ORDER / UI MANAGEMENT
 function handleActiveOrder(order) {
 	hideLastTripChip();
 	
@@ -593,7 +583,7 @@ function lockFormInteractions() {
 	updateIconsOpacity(null);
 }
 
-// --- Helpers ---
+// HELPERS
 function setSelectionMode(mode) {
 	if (formLocked) return;
 	selectionMode = mode;
@@ -722,12 +712,13 @@ async function cancelOrder(order) {
             console.error('Cancellation failed:', error);
             alert("Failed to cancel: " + (error.message || "Unknown error"));
         }
+		
     } catch (err) {
         console.error("Network error during cancellation:", err);
     }
 }
 
-// --- User-menu and avatar ---
+// USER-MENU
 const user = Telegram.WebApp.initDataUnsafe.user;
 if (user?.photo_url) {
 	document.getElementById('user-avatar').src = user.photo_url;
@@ -754,7 +745,7 @@ document.addEventListener('click', (e) => {
 	}
 });
 
-// --- Pulsation ---
+// PULSATION
 function showPulseOnMarker() {
 	const pulse = document.querySelector('#marker-pin .pin-pulse');
 	if (pulse) pulse.style.display = 'block';
@@ -825,7 +816,7 @@ function hideLastTripChip() {
     if (chip) chip.remove();
 }
 
-// --- Draw Route ---
+// DRAW ROUTE
 async function drawRouteOnMap(start, end) {
 
 	if (startMarker) startMarker.remove();
@@ -944,7 +935,7 @@ function useCurrentLocation() {
     );
 }
 
-// --- Visibility / Lifecycle ---
+// VISIBILITY / LIFECYCLE
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
 		if (!stompClient || !stompClient.connected) {

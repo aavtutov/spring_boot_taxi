@@ -30,7 +30,6 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderStatus;
 import com.aavtutov.spring.boot.spring_boot_taxi.event.OrderUpdateEvent;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.ClientNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.MapboxServiceException;
-import com.aavtutov.spring.boot.spring_boot_taxi.exception.NoContentException;
 import com.aavtutov.spring.boot.spring_boot_taxi.exception.OrderNotFoundException;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.MapboxRoutingServiceImpl.Route;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.validator.OrderValidator;
@@ -254,9 +253,8 @@ public class OrderServiceImpl implements OrderService {
 
 	@Transactional(readOnly = true)
 	@Override
-	public OrderEntity findMostRecentOrderByClientId(Long clientId) {
-		return orderRepository.findTopByClientIdOrderByCreatedAtDesc(clientId)
-				.orElseThrow(() -> new NoContentException("Client has no any orders"));
+	public Optional<OrderEntity> findMostRecentOrderOptional(Long clientId) {
+		return orderRepository.findTopByClientIdOrderByCreatedAtDesc(clientId);
 	}
 	
 	@Transactional(readOnly = true)
