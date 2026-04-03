@@ -60,14 +60,15 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 			} else {
 				telegramBotService.sendMessage(chatId, "You don't have an active ride right now, "
 						+ "so there's no one to receive your message yet.\n"
-						+ "\nBut you can always book one 👇");
+						+ "\nBut you can always book one 👇", getWebAppKeyboard());
+				return;
 			}
 		}
 
 		processUserRegistration(telegramId, firstName, chatId);
-		sendWebAppButton(chatId,
+		telegramBotService.sendMessage(chatId,
 				"<b>Ready to go?</b>"
-				+ "\nOpen app to book your ride in seconds 🚀");
+				+ "\nOpen app to book your ride in seconds 🚀", getWebAppKeyboard());
 	}
 
 	private void processUserRegistration(Long telegramId, String firstName, String chatId) {
@@ -94,7 +95,7 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 	
-	private void sendWebAppButton(String chatId, String messageText) {
+	private InlineKeyboardMarkup getWebAppKeyboard() {
 		
 		WebAppInfo webAppInfo = WebAppInfo.builder()
 				.url(webAppUrl)
@@ -109,6 +110,6 @@ public class UpdateConsumer implements LongPollingSingleThreadUpdateConsumer {
 				.keyboardRow(new InlineKeyboardRow(button))
 				.build();
 
-		telegramBotService.sendMessage(chatId, messageText, keyboard);
+		return keyboard;
 	}
 }
