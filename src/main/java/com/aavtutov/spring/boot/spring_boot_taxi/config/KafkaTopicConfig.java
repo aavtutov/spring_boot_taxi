@@ -15,4 +15,12 @@ public class KafkaTopicConfig {
 				.replicas(3)
 				.build();
 	}
+	
+	@Bean
+	NewTopic driverLocationsTopic() {
+		return TopicBuilder.name("driver-locations")
+				.partitions(6)
+				.replicas(3)
+				.build();
+	}
 }

@@ -1,7 +1,9 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.controller;
 
+import java.time.Instant;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,29 +17,35 @@ import org.springframework.web.bind.annotation.RestController;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverCreateDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverResponseDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverUpdateDTO;
+import com.aavtutov.spring.boot.spring_boot_taxi.dto.LocationUpdateRequest;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.DriverMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
+import com.aavtutov.spring.boot.spring_boot_taxi.kafka.event.DriverLocationEvent;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.DriverService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 
 @RestController
 @RequestMapping("/api/drivers")
 @RequiredArgsConstructor
+@Slf4j
 public class DriverController {
 
 	private final DriverService driverService;
 	private final DriverMapper driverMapper;
+	private final ApplicationEventPublisher eventPublisher;
 
     @GetMapping("/me")
     public DriverResponseDTO getCurrentDriver(ClientEntity client) {
         DriverEntity driver = driverService.findDriverByTelegramId(client.getTelegramId());
         return driverMapper.toResponseDto(driver);
     }
+
 	
     /**
      * Registers a new driver using authenticated Client data.
@@ -108,4 +116,23 @@ public class DriverController {
 		driverService.adminUpdateDriverStatus(driverId, statusDTO.getStatus());
 		return ResponseEntity.ok("Status updated to " + statusDTO.getStatus().name());
 	}
+	
+	@PostMapping("/{driverId}/location")
+    public ResponseEntity<Void> updateDriverLocation(
+    		@PathVariable Long driverId,
+    		@RequestBody LocationUpdateRequest request) {
+		
+		log.info("Received location for driver {}: lat={}, lon={}", 
+	             driverId, request.latitude(), request.longitude());
+    	
+		eventPublisher.publishEvent(new DriverLocationEvent(
+				driverId,
+				request.latitude(),
+				request.longitude(),
+				request.heading(),
+				request.occurredAt() != null ? request.occurredAt() : Instant.now()
+				));
+		
+        return ResponseEntity.ok().build();
+    }
 }
