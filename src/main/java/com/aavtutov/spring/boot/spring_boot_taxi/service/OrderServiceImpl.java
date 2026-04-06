@@ -175,7 +175,9 @@ public class OrderServiceImpl implements OrderService {
 				new OrderUpdateEvent(
 						savedOrder.getId(),
 						savedOrder.getStatus(),
-						savedOrder.getCancellationSource()));
+						savedOrder.getCancellationSource(),
+						Instant.now())
+				);
 		return savedOrder;
 	}
 	
