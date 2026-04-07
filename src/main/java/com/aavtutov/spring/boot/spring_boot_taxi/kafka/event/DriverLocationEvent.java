@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public record DriverLocationEvent(
+		Long orderId,
 		Long driverId,
 		BigDecimal latitude,
 		BigDecimal longitude,
