@@ -1,9 +1,7 @@
 package com.aavtutov.spring.boot.spring_boot_taxi.controller;
 
-import java.time.Instant;
 import java.util.List;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,12 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverCreateDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverResponseDTO;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.DriverUpdateDTO;
-import com.aavtutov.spring.boot.spring_boot_taxi.dto.LocationUpdateRequest;
 import com.aavtutov.spring.boot.spring_boot_taxi.dto.mapper.DriverMapper;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.ClientEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverEntity;
 import com.aavtutov.spring.boot.spring_boot_taxi.entity.DriverStatus;
-import com.aavtutov.spring.boot.spring_boot_taxi.kafka.event.DriverLocationEvent;
 import com.aavtutov.spring.boot.spring_boot_taxi.service.DriverService;
 
 import jakarta.validation.Valid;
@@ -38,7 +34,6 @@ public class DriverController {
 
 	private final DriverService driverService;
 	private final DriverMapper driverMapper;
-	private final ApplicationEventPublisher eventPublisher;
 
     @GetMapping("/me")
     public DriverResponseDTO getCurrentDriver(ClientEntity client) {
