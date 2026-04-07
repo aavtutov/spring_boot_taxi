@@ -171,9 +171,15 @@ public class OrderServiceImpl implements OrderService {
     
 	private OrderEntity saveAndNotify(OrderEntity order) {
 		OrderEntity savedOrder = orderRepository.save(order);
+		
+		Long driverTelegramId = (savedOrder.getDriver() != null) 
+	            ? savedOrder.getDriver().getTelegramId() 
+	            : null;
+		
 		eventPublisher.publishEvent(
 				new OrderUpdateEvent(
 						savedOrder.getId(),
+						driverTelegramId,
 						savedOrder.getStatus(),
 						savedOrder.getCancellationSource(),
 						Instant.now())

@@ -7,6 +7,7 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderStatus;
 
 public record OrderUpdateEvent(
 		Long orderId,
+		Long driverTelegramId,
 		OrderStatus status,
 		OrderCancellationSource cancellationSource,
 		Instant occurredAt) {

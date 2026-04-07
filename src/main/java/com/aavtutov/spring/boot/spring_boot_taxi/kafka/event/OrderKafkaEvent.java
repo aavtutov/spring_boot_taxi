@@ -7,6 +7,7 @@ import com.aavtutov.spring.boot.spring_boot_taxi.entity.OrderStatus;
 
 public record OrderKafkaEvent(
 		Long orderId,
+		Long driverTelegramId,
 		OrderStatus status,
 		OrderCancellationSource cancellationSource,
 		Instant occurredAt) {
