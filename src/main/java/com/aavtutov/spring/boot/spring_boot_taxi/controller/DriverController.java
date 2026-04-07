@@ -116,23 +116,4 @@ public class DriverController {
 		driverService.adminUpdateDriverStatus(driverId, statusDTO.getStatus());
 		return ResponseEntity.ok("Status updated to " + statusDTO.getStatus().name());
 	}
-	
-	@PostMapping("/{driverId}/location")
-    public ResponseEntity<Void> updateDriverLocation(
-    		@PathVariable Long driverId,
-    		@RequestBody LocationUpdateRequest request) {
-		
-		log.info("Received location for driver {}: lat={}, lon={}", 
-	             driverId, request.latitude(), request.longitude());
-    	
-		eventPublisher.publishEvent(new DriverLocationEvent(
-				driverId,
-				request.latitude(),
-				request.longitude(),
-				request.heading(),
-				request.occurredAt() != null ? request.occurredAt() : Instant.now()
-				));
-		
-        return ResponseEntity.ok().build();
-    }
 }
